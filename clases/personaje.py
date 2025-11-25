@@ -19,7 +19,7 @@ class Personaje:
         if not isinstance(x, int):
             raise TypeError ("La x debe ser un entero " + str(type(x)))
         elif x < 0:
-            raise ValueError("LA x no debe ser un número negativo")
+            raise ValueError("La x no debe ser un número negativo")
         else:
             self.__x = x
 
