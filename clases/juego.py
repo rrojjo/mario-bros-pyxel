@@ -2,6 +2,7 @@
 
 from clases.personaje import Personaje
 import pyxel
+import os
 
 
 class Tablero:
@@ -20,10 +21,30 @@ class Tablero:
 
         # En el init se inicializará pyxel también
         # Esta instrucción inicializará pyxel, ver la API para más parámetros
-        pyxel.init(self.ancho, self.alto, title="Demo Juego Pyxel")
+        pyxel.init(self.ancho, self.alto, title="Mario Bros Game")
+
+        #----------------------------------------------------
         # Cargando el fichero pyxres con las imágenes
-        pyxel.load(r"C:\Users/projo/PycharmProjects/Mario "
-                   r"Bros/assets/graficosprc.pyxres")
+        # 1. Buscamos la carpeta donde vive este archivo (juego.py)
+        # Esto devolverá algo como: "C:\...\Mario Bros\clases"
+        carpeta_actual = os.path.dirname(os.path.abspath(__file__))
+
+        # 2. Construimos la ruta hacia el archivo de recursos
+        # join: une las partes con la barra correcta (\ o /)
+        # "..": significa "subir un nivel hacia atrás" (salir de 'clases' a la raíz)
+        ruta_recursos = os.path.join(carpeta_actual, "..", "assets",
+                                     "graficosprc.pyxres")
+
+        # 3. (Opcional pero recomendado) Limpiamos la ruta para que se vea bonita
+        # Esto quita los ".." y deja la ruta absoluta limpia
+        ruta_final = os.path.normpath(ruta_recursos)
+
+        # 4. Cargamos el archivo
+        print(
+            f"Cargando recursos desde: {ruta_final}")  # Esto es para que veas en consola qué ruta ha calculado
+        pyxel.load(ruta_final)
+        #----------------------------------------------------
+
         # Ejecutando el juego
         pyxel.run(self.update, self.draw)
 
