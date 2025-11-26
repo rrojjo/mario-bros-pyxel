@@ -40,8 +40,8 @@ class Tablero:
     def ancho(self, ancho: int):
         if not isinstance(ancho, int):
             raise TypeError("El ancho debe ser un entero " + str(type(ancho)))
-        elif ancho < 1 or ancho > 256:
-            raise ValueError("El ancho debe estar entre 1 y 256")
+        elif ancho < 1 or ancho > 368:
+            raise ValueError("El ancho debe estar entre 1 y 368")
         else:
             self.__ancho = ancho
 
@@ -49,8 +49,8 @@ class Tablero:
     def alto(self, alto: int):
         if not isinstance(alto, int):
             raise TypeError("El alto debe ser un entero " + str(type(alto)))
-        elif alto < 1 or alto > 256:
-            raise ValueError("El alto debe estar en el rango entre 1 y 256")
+        elif alto < 1 or alto > 192:
+            raise ValueError("El alto debe estar en el rango entre 1 y 192")
         else:
             self.__alto = alto
 
