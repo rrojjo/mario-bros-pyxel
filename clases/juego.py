@@ -33,7 +33,7 @@ class Tablero:
         # join: une las partes con la barra correcta (\ o /)
         # "..": significa "subir un nivel hacia atrás" (salir de 'clases' a la raíz)
         ruta_recursos = os.path.join(carpeta_actual, "..", "assets",
-                                     "graficosprc.pyxres")
+                                     "graficosprc-copia.pyxres")
 
         # 3. (Opcional pero recomendado) Limpiamos la ruta para que se vea bonita
         # Esto quita los ".." y deja la ruta absoluta limpia
@@ -95,4 +95,5 @@ class Tablero:
         # Borra la pantalla
         pyxel.cls(0)
         # Dibuja el personaje, los parámetros de pyxel.blt son (x, y, sprite tuple)
+        pyxel.bltm(0, 0, 0, 0, 0, self.ancho, self.alto)
         pyxel.blt(self.personaje.x, self.personaje.y, *self.personaje.sprite)
