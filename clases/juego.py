@@ -33,7 +33,7 @@ class Tablero:
         # join: une las partes con la barra correcta (\ o /)
         # "..": significa "subir un nivel hacia atrás" (salir de 'clases' a la raíz)
         ruta_recursos = os.path.join(carpeta_actual, "..", "assets",
-                                     "graficosprc-copia.pyxres")
+                                     "graficosprc.pyxres")
 
         # 3. (Opcional pero recomendado) Limpiamos la ruta para que se vea bonita
         # Esto quita los ".." y deja la ruta absoluta limpia
