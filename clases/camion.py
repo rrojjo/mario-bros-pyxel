@@ -38,36 +38,29 @@ class Camion:
         else:
             self.__y = y
 
+#Propiedad paquetes_cargados
 
-
-
-    #Falta por revisar, es copiado de gemini
     @property
     def paquetes_cargados(self) -> int:
-        """Devuelve cuántos paquetes tiene el camión actualmente."""
         return self._paquetes_cargados
 
     @property
     def capacidad(self) -> int:
-        """Devuelve la capacidad máxima del camión."""
         return self._capacidad
 
-    # --- LÓGICA DE COMPORTAMIENTO ---
+#LÓGICA DE COMPORTAMIENTO
 
     def cargar_paquete(self):
-        """
-        Incrementa el contador de paquetes si no está lleno.
-        Luigi llamará a este método al entregar un paquete.
-        """
+        #Incrementa el contador de paquetes si no está lleno.
         if self._paquetes_cargados < self._capacidad:
             self._paquetes_cargados += 1
 
     def esta_lleno(self) -> bool:
-        """Devuelve True si el camión ha alcanzado su capacidad máxima."""
+        #Devuelve True si el camión ha alcanzado su capacidad máxima.
         return self._paquetes_cargados >= self._capacidad
 
     def vaciar(self):
-        """Resetea el contador de paquetes (se usará cuando el camión vuelva del reparto)."""
+        #Resetea el contador de paquetes (se usará cuando el camión vuelva  del reparto).
         self._paquetes_cargados = 0
 
     def __str__(self) -> str:
