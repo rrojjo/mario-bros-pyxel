@@ -3,11 +3,11 @@
 class Personaje:
 
     def __init__(self, x: int,y: int, piso:int, nombre:str):
-        self.x=x
-        self.y=y
-        self.piso=piso
-        self.nombre=nombre
-        self.sprite = (0, 0, 0, 16, 16)
+        self.x = x
+        self.y = y
+        self.piso = piso
+        self.nombre = nombre
+        self.sprite = (0, 0, 0, 16, 16, 15)
 
 #Propiedad x
 
@@ -61,12 +61,14 @@ class Personaje:
         return self.__nombre
 
     @nombre.setter
-    def nombre(self, nombre: str):
-        if not isinstance(nombre, str):
+    def nombre(self, valor: str):
+        if not isinstance(valor, str):
             raise TypeError(
-                "El nombre debe ser un string " + str(type(nombre)))
+                "El nombre debe ser un string " + str(type(valor)))
+        elif valor != "Mario" and valor != "Luigi":
+            raise ValueError("El nombre debe ser 'Mario' o 'Luigi'")
         else:
-            self.__nombre = nombre
+            self.__nombre = valor
 
 #Función mover
     def subir(self, nueva_y: int):
@@ -75,7 +77,7 @@ class Personaje:
         Incrementa el piso en 1.
         """
         # Actualizamos el piso (el setter ya validará que sea entero)
-        self.piso += 1
+        self.piso += 2
         # Actualizamos la coordenada visual
         self.y = nueva_y
 
@@ -85,7 +87,7 @@ class Personaje:
         Decrementa el piso en 1.
         """
         # Actualizamos el piso
-        self.piso -= 1
+        self.piso -= 2
         # Actualizamos la coordenada visual
         self.y = nueva_y
 

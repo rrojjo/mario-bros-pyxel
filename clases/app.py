@@ -12,7 +12,7 @@ class App:
         # Creamos el tablero usando las dimensiones del nivel
         # Tablero hará pyxel.init(...) y pyxel.run(...)
         self.tablero = Tablero(self.nivel.ancho_pantalla,
-                               self.nivel.alto_pantalla)
+                               self.nivel.alto_pantalla, self.nivel.num_pisos)
 
     def update(self):
         # Si pulsas Q, se cierra el juego

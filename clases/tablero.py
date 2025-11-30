@@ -9,22 +9,30 @@ import os
 class Tablero:
     """Esta clase contiene un simple tablero"""
 
-    def __init__(self, ancho: int, alto: int):
+    def __init__(self, ancho: int, alto: int, pisos):
         # 1. Asignar atributos usando los setters
         self.ancho = ancho
         self.alto = alto
+        self.pisos = pisos
 
         # 2. Definir alturas de los pisos (calculadas para 192px de alto)
         # Suponemos 4 niveles. Dejamos espacio abajo para el suelo.
+        #Alturas de los pisos de Luigi
+        self.y_piso1 = 168
+        self.y_piso3 = 128
+        self.y_piso5 = 88
+        self.y_piso7 = 48
+        # Alturas de los pisos de Mario
         self.y_piso0 = 168
-        self.y_piso1 = 128
-        self.y_piso2 = 88
-        self.y_piso3 = 48
+        self.y_piso2 = 136
+        self.y_piso4 = 94
+        self.y_piso6 = 54
+
         # Crear personaje
         #Mario
         self.mario = Personaje(265, 154, 0, "Mario")
         # Luigi
-        self.luigi = Personaje(93, 154, 0, "Luigi")
+        self.luigi = Personaje(93, 154, 1, "Luigi")
         #Crear camión
         self.camion = Camion(10, 74)
         # Marcadores
@@ -91,6 +99,20 @@ class Tablero:
         else:
             self.__alto = valor
 
+    @property
+    def pisos(self) -> int:
+        return self.__pisos
+
+    @pisos.setter
+    def pisos(self, valor: int):
+        if not isinstance(valor, int):
+            raise TypeError(
+                "El número de pisos debe ser un entero " + str(type(valor)))
+        elif valor != 5 and valor != 7:
+            raise ValueError("El número de pisos debe ser 5 o 7")
+        else:
+            self.__pisos = valor
+
 
     def update(self):
         """ Este es un método pyxel que se ejecuta en cada iteración del juego (cada
@@ -101,25 +123,35 @@ class Tablero:
             pyxel.quit()
             # --- MOVIMIENTO DE MARIO (Flechas) ---
             # Subir: Solo si no está en el piso máximo (Piso 3)
-        if pyxel.btnp(pyxel.KEY_UP) and self.mario.piso < 3:
-            # Calculamos la nueva Y: posición actual - 40 píxeles (hacia arriba)
-            nueva_y = self.mario.y - 48
-            self.mario.subir(nueva_y)
+        if pyxel.btnp(pyxel.KEY_UP):
+            if self.mario.piso < (self.pisos - 1) and self.mario.piso:
+                # Salto normal
+                nueva_y = self.mario.y - 48
+                self.mario.subir(nueva_y)
+            elif self.mario.piso == 0:
+                # Salto especial desde piso 2
+                nueva_y = self.mario.y - 32
+                self.mario.subir(nueva_y)
 
         # Bajar: Solo si no está en el piso mínimo (Piso 0)
-        if pyxel.btnp(pyxel.KEY_DOWN) and self.mario.piso > 0:
-             # Calculamos la nueva Y: posición actual + 40 píxeles (hacia abajo)
-            nueva_y = self.mario.y + 48
-            self.mario.bajar(nueva_y)
+        if pyxel.btnp(pyxel.KEY_DOWN):
+            if self.mario.piso == 2:
+                # salto especial de 32
+                nueva_y = self.mario.y + 32
+                self.mario.bajar(nueva_y)
+            elif 0 < self.mario.piso <= 6:
+                # resto de pisos: 48
+                nueva_y = self.mario.y + 48
+                self.mario.bajar(nueva_y)
 
         # --- MOVIMIENTO DE LUIGI (W / S) ---
         # Subir (Tecla W)
-        if pyxel.btnp(pyxel.KEY_W) and self.luigi.piso < 3:
+        if pyxel.btnp(pyxel.KEY_W) and self.luigi.piso < self.pisos:
             nueva_y = self.luigi.y - 48
             self.luigi.subir(nueva_y)
 
         # Bajar (Tecla S)
-        if pyxel.btnp(pyxel.KEY_S) and self.luigi.piso > 0:
+        if pyxel.btnp(pyxel.KEY_S) and self.luigi.piso > 1:
             nueva_y = self.luigi.y + 48
             self.luigi.bajar(nueva_y)
 
@@ -130,7 +162,7 @@ class Tablero:
         # Borra la pantalla
         pyxel.cls(0)
 
-        pyxel.bltm(0, 0, 0, 0, 0, self.ancho, self.alto)
+        pyxel.bltm(0, 0, 0, 0, 0, self.ancho, self.alto, 0)
 
         # Dibuja el personaje, los parámetros de pyxel.blt son (x, y, sprite tuple)
         pyxel.blt(self.mario.x, self.mario.y, *self.mario.sprite)
@@ -140,5 +172,7 @@ class Tablero:
         pyxel.text(100, 5, f"FALLOS: {self.fallos}", 8)  # Color 8 es rojo
 
         #Código temporal, sirva para ubicar las coordenadas con el ratón
-        coord_texto = f"{pyxel.mouse_x},{pyxel.mouse_y}"
+        coord_texto = f"{pyxel.mouse_x+1},{pyxel.mouse_y+5}"
+        punto = "."
         pyxel.text(pyxel.mouse_x + 5, pyxel.mouse_y - 5, coord_texto, 7)
+        pyxel.text(pyxel.mouse_x, pyxel.mouse_y, punto, 7)

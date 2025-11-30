@@ -5,6 +5,7 @@ class Nivel:
     def __init__(self, dificultad):
         self.dificultad = dificultad
         self._configurar_dimensiones()
+        self._configurar_pisos()
         self.num_cintas = self._configurar_cintas()
 
     @property
@@ -51,6 +52,21 @@ class Nivel:
             self.__alto_pantalla = valor
 
 
+    @property
+    def num_pisos(self):
+        return self.__num_pisos
+
+    @num_pisos.setter
+    def num_pisos(self, valor):
+        if not isinstance(valor, int):
+            raise TypeError("El número de pisos debe ser un entero " + str(
+                type(valor)))
+        elif valor != 5 and valor != 7:
+            raise ValueError("El número de pisos debe ser 5 o 7")
+        else:
+            self.__num_pisos = valor
+
+
     def _configurar_dimensiones(self):
         """Asigna valores directos a ancho y alto según la dificultad"""
 
@@ -76,3 +92,10 @@ class Nivel:
             return 10 # Cintas 0 a 9
         else:
             return 6
+
+
+    def _configurar_pisos(self):
+        if self.dificultad == "FACIL" or self.dificultad == "CRAZY":
+            self.num_pisos = 5 # Pisos 0 a 5
+        elif self.dificultad == "MEDIO" or self.dificultad == "EXTREMO":
+            self.num_pisos = 7 # Pisos 0 a 7
