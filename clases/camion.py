@@ -7,6 +7,7 @@ class Camion:
         self.y = y
         self._paquetes_cargados=0 #contador
         self._capacidad=8 #fijo
+        self.sprite= (0, 32, 64, 47, 48)
 
 #Propiedad x
 
