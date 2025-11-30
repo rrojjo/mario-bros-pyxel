@@ -1,8 +1,10 @@
 # Contiene el tablero Juego/MarioBrosGame (lógica principal).
 
 from clases.personaje import Personaje
+from clases.camion import Camion
 import pyxel
 import os
+
 
 class Tablero:
     """Esta clase contiene un simple tablero"""
@@ -23,6 +25,11 @@ class Tablero:
         self.mario = Personaje(265, 154, 0, "Mario")
         # Luigi
         self.luigi = Personaje(93, 154, 0, "Luigi")
+        #Crear camión
+        self.camion = Camion(10, 74)
+        # Marcadores
+        self.puntos = 0
+        self.fallos = 0
 
         # En el init se inicializará pyxel también
         # Esta instrucción inicializará pyxel, ver la API para más parámetros
@@ -86,18 +93,35 @@ class Tablero:
 
 
     def update(self):
-        """ Este es un método pyxel que se ejecuta en cada iteración del
-        juego (cada
+        """ Este es un método pyxel que se ejecuta en cada iteración del juego (cada
         fotograma). Necesitas poner aquí todo el código que tiene que ser ejecutado en cada frame. Ahora
         contiene sólo la lógica para mover el personaje si se pulsa una tecla."""
         # Para salir del juego
         if pyxel.btnp(pyxel.KEY_Q):
             pyxel.quit()
-        # Movimiento vertical
-        elif pyxel.btn(pyxel.KEY_UP):
-            self.personaje.mover('arriba', self.alto)
-        elif pyxel.btn(pyxel.KEY_DOWN):
-            self.personaje.mover('abajo', self.alto)
+            # --- MOVIMIENTO DE MARIO (Flechas) ---
+            # Subir: Solo si no está en el piso máximo (Piso 3)
+        if pyxel.btnp(pyxel.KEY_UP) and self.mario.piso < 3:
+            # Calculamos la nueva Y: posición actual - 40 píxeles (hacia arriba)
+            nueva_y = self.mario.y - 48
+            self.mario.subir(nueva_y)
+
+        # Bajar: Solo si no está en el piso mínimo (Piso 0)
+        if pyxel.btnp(pyxel.KEY_DOWN) and self.mario.piso > 0:
+             # Calculamos la nueva Y: posición actual + 40 píxeles (hacia abajo)
+            nueva_y = self.mario.y + 48
+            self.mario.bajar(nueva_y)
+
+        # --- MOVIMIENTO DE LUIGI (W / S) ---
+        # Subir (Tecla W)
+        if pyxel.btnp(pyxel.KEY_W) and self.luigi.piso < 3:
+            nueva_y = self.luigi.y - 48
+            self.luigi.subir(nueva_y)
+
+        # Bajar (Tecla S)
+        if pyxel.btnp(pyxel.KEY_S) and self.luigi.piso > 0:
+            nueva_y = self.luigi.y + 48
+            self.luigi.bajar(nueva_y)
 
     def draw(self):
         """Este es un método pyxel que se ejecuta en cada iteración del juego (cada
@@ -111,6 +135,9 @@ class Tablero:
         # Dibuja el personaje, los parámetros de pyxel.blt son (x, y, sprite tuple)
         pyxel.blt(self.mario.x, self.mario.y, *self.mario.sprite)
         pyxel.blt(self.luigi.x, self.luigi.y, *self.luigi.sprite)
+        pyxel.blt(self.camion.x, self.camion.y, *self.camion.sprite)
+        pyxel.text(10, 5, f"PUNTOS: {self.puntos}", 7) # Color 7 es blanco
+        pyxel.text(100, 5, f"FALLOS: {self.fallos}", 8)  # Color 8 es rojo
 
         #Código temporal, sirva para ubicar las coordenadas con el ratón
         coord_texto = f"{pyxel.mouse_x},{pyxel.mouse_y}"

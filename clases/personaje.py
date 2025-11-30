@@ -39,21 +39,7 @@ class Personaje:
         else:
             self.__y = y
 
-#Función mover
-    def mover(self, direccion: str, alto_tablero: int):
-        """ Este es un ejemplo de como mover un personaje horizontalmente. No se considerarán los obstáculos.
-        :param direccion: un string que puede ser derecha o izquierda
-        :param ancho_tablero: el ancho del tablero para comprobar límites
-        """
-        # Variable local para almacenar el ancho del personaje y poder  comprobar colisiones con borde derecho
-        # del tablero
-        alto_personaje = self.sprite[4]
-        if (direccion.lower() == "arriba" and self.y > 0):
-            self.y -= 1
-        elif (direccion.lower() == "abajo" and self.y + alto_personaje < alto_tablero):
-            self.y += 1
-
-#Propiedad piso
+# Propiedad piso
 
     @property
     def piso(self) -> int:
@@ -62,13 +48,13 @@ class Personaje:
     @piso.setter
     def piso(self, piso: int):
         if not isinstance(piso, int):
-            raise TypeError ("El piso debe ser un entero " + str(type(piso)))
+           raise TypeError("El piso debe ser un entero " + str(type(piso)))
         elif piso < 0:
-            raise ValueError("El piso no debe ser un número negativo")
+           raise ValueError("El piso no debe ser un número negativo")
         else:
             self.__piso = piso
 
-#Propiedad nombre
+# Propiedad nombre
 
     @property
     def nombre(self) -> str:
@@ -77,9 +63,31 @@ class Personaje:
     @nombre.setter
     def nombre(self, nombre: str):
         if not isinstance(nombre, str):
-            raise TypeError("El nombre debe ser un string " + str(type(nombre)))
+            raise TypeError(
+                "El nombre debe ser un string " + str(type(nombre)))
         else:
             self.__nombre = nombre
+
+#Función mover
+    def subir(self, nueva_y: int):
+        """
+        Sube un piso al personaje y actualiza su posición Y.
+        Incrementa el piso en 1.
+        """
+        # Actualizamos el piso (el setter ya validará que sea entero)
+        self.piso += 1
+        # Actualizamos la coordenada visual
+        self.y = nueva_y
+
+    def bajar(self, nueva_y: int):
+        """
+        Baja un piso al personaje y actualiza su posición Y.
+        Decrementa el piso en 1.
+        """
+        # Actualizamos el piso
+        self.piso -= 1
+        # Actualizamos la coordenada visual
+        self.y = nueva_y
 
     def __str__(self):
         return f"Personaje {self.nombre} en posición ({self.x}, {self.y}) en el piso {self.piso}"
