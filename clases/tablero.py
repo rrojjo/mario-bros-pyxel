@@ -16,8 +16,21 @@ class Tablero:
         # Estableciendo los atributos
         self.ancho = ancho
         self.alto = alto
-        # El personaje estará en la mitad del tablero
-        self.personaje = Personaje(self.ancho//2, self.alto//2, 1, "Mario")
+        ## 2. Definir alturas de los pisos (calculadas para 192px de alto)
+        # Suponemos 4 niveles. Dejamos espacio abajo para el suelo.
+        # Piso 0 (Abajo): y=168
+        # Piso 1: y=128
+        # Piso 2: y=88
+        # Piso 3 (Arriba): y=48
+        self.y_piso0 = 168
+        self.y_piso1 = 128
+        self.y_piso2 = 88
+        self.y_piso3 = 48
+        # Crear personaje
+        #Mario
+        self.mario = Personaje(265, 154, 0, "Mario")
+        # Luigi
+        self.luigi = Personaje(93, 154, 0, "Luigi")
 
         # En el init se inicializará pyxel también
         # Esta instrucción inicializará pyxel, ver la API para más parámetros
@@ -98,4 +111,9 @@ class Tablero:
         pyxel.bltm(0, 0, 0, 0, 0, self.ancho, self.alto)
 
         # Dibuja el personaje, los parámetros de pyxel.blt son (x, y, sprite tuple)
-        pyxel.blt(self.personaje.x, self.personaje.y, *self.personaje.sprite)
+        pyxel.blt(self.mario.x, self.mario.y, *self.mario.sprite)
+        pyxel.blt(self.luigi.x, self.luigi.y, *self.luigi.sprite)
+
+        #Código temporal, sirva para ubicar las coordenadas con el ratón
+        coord_texto = f"{pyxel.mouse_x},{pyxel.mouse_y}"
+        pyxel.text(pyxel.mouse_x + 5, pyxel.mouse_y - 5, coord_texto, 7)
