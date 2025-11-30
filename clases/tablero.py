@@ -4,24 +4,16 @@ from clases.personaje import Personaje
 import pyxel
 import os
 
-
 class Tablero:
     """Esta clase contiene un simple tablero"""
 
     def __init__(self, ancho: int, alto: int):
-        """ Método que crea el tablero
-        :param ancho: El ancho del tablero
-        :param alto: El alto del tablero
-        """
-        # Estableciendo los atributos
+        # 1. Asignar atributos usando los setters
         self.ancho = ancho
         self.alto = alto
-        ## 2. Definir alturas de los pisos (calculadas para 192px de alto)
+
+        # 2. Definir alturas de los pisos (calculadas para 192px de alto)
         # Suponemos 4 niveles. Dejamos espacio abajo para el suelo.
-        # Piso 0 (Abajo): y=168
-        # Piso 1: y=128
-        # Piso 2: y=88
-        # Piso 3 (Arriba): y=48
         self.y_piso0 = 168
         self.y_piso1 = 128
         self.y_piso2 = 88
@@ -34,12 +26,13 @@ class Tablero:
 
         # En el init se inicializará pyxel también
         # Esta instrucción inicializará pyxel, ver la API para más parámetros
-        pyxel.init(self.ancho, self.alto, title="Mario Bros Game")
+        pyxel.init(self.ancho, self.alto, title="Mario Bros "
+                                                "Game")
 
         #----------------------------------------------------
         # Cargando el fichero pyxres con las imágenes
         # 1. Buscamos la carpeta donde vive este archivo (tablero.py)
-        # Esto devolverá algo como: "C:\...\Mario Bros\clases"
+        # Esto devolverá algo como: "C:\…\Mario Bros\clases"
         carpeta_actual = os.path.dirname(os.path.abspath(__file__))
 
         # 2. Construimos la ruta hacia el archivo de recursos
@@ -48,7 +41,7 @@ class Tablero:
         ruta_recursos = os.path.join(carpeta_actual, "..", "assets",
                                      "graficosprc.pyxres")
 
-        # 3. (Opcional pero recomendado) Limpiamos la ruta para que se vea bonita
+        # 3. (Opcional, pero recomendado) Limpiamos la ruta para que se vea bonita
         # Esto quita los ".." y deja la ruta absoluta limpia
         ruta_final = os.path.normpath(ruta_recursos)
 
@@ -71,25 +64,30 @@ class Tablero:
         return self.__alto
 
     @ancho.setter
-    def ancho(self, ancho: int):
-        if not isinstance(ancho, int):
-            raise TypeError("El ancho debe ser un entero " + str(type(ancho)))
-        elif ancho < 1 or ancho > 368:
-            raise ValueError("El ancho debe estar entre 1 y 368")
+    def ancho(self, valor: int):
+        if not isinstance(valor, int):
+            raise TypeError(
+                "El ancho debe ser un entero " + str(type(valor)))
+        elif valor < 0:
+            raise ValueError("El ancho debe ser un número positivo")
         else:
-            self.__ancho = ancho
+            self.__ancho = valor
 
     @alto.setter
-    def alto(self, alto: int):
-        if not isinstance(alto, int):
-            raise TypeError("El alto debe ser un entero " + str(type(alto)))
-        elif alto < 1 or alto > 192:
-            raise ValueError("El alto debe estar en el rango entre 1 y 192")
+    def alto(self, valor: int):
+        if not isinstance(valor, int):
+            raise TypeError(
+                "El alto debe ser un entero " + str(type(valor)))
+        elif valor < 0:
+            raise ValueError(
+                "El alto debe estar un número positivo")
         else:
-            self.__alto = alto
+            self.__alto = valor
+
 
     def update(self):
-        """ Este es un método pyxel que se ejecuta en cada iteración del juego (cada
+        """ Este es un método pyxel que se ejecuta en cada iteración del
+        juego (cada
         fotograma). Necesitas poner aquí todo el código que tiene que ser ejecutado en cada frame. Ahora
         contiene sólo la lógica para mover el personaje si se pulsa una tecla."""
         # Para salir del juego
