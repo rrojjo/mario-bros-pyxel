@@ -48,7 +48,7 @@ class Tablero:
         # Cargando el fichero pyxres con las imágenes
         # 1. Buscamos la carpeta donde vive este archivo (tablero.py)
         # Esto devolverá algo como: "C:\…\Mario Bros\clases"
-        carpeta_actual = os.path.dirname(os.path.abspath(__file__))
+        """carpeta_actual = os.path.dirname(os.path.abspath(__file__))
 
         # 2. Construimos la ruta hacia el archivo de recursos
         # join: une las partes con la barra correcta (\ o /)
@@ -62,8 +62,8 @@ class Tablero:
 
         # 4. Cargamos el archivo
         print(
-            f"Cargando recursos desde: {ruta_final}")  # Esto es para que veas en consola qué ruta ha calculado
-        pyxel.load(ruta_final)
+            f"Cargando recursos desde: {ruta_final}")  # Esto es para que veas en consola qué ruta ha calculado"""
+        pyxel.load("assets/graficosprc.pyxres")
         #----------------------------------------------------
 
         # Ejecutando el juego
