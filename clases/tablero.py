@@ -171,7 +171,7 @@ class Tablero:
                 # Vamos a la altura EXACTA definida en el diccionario
                 nueva_y = self.alturas_mario[siguiente_piso]
                 self.mario.subir(
-                    nueva_y)  # Tu método subir ya suma +2 al piso
+                    nueva_y)  # Tu metodo subir ya suma +2 al piso
 
         # BAJAR
         if pyxel.btnp(pyxel.KEY_DOWN):
@@ -195,8 +195,8 @@ class Tablero:
                 self.luigi.subir(nueva_y)
 
                 # CORRECCIÓN DE PISO LOGICO:
-                # Tu método 'subir' en Personaje suma +2 por defecto.
-                # Si subimos de 0 a 1, el método pondrá piso=2. ¡Mal!
+                # Tu metodo 'subir' en Personaje suma +2 por defecto.
+                # Si subimos de 0 a 1, el metodo pondrá piso=2. ¡Mal!
                 # Lo corregimos manualmente aquí:
                 if self.luigi.piso == 2 and siguiente_piso == 1:
                     self.luigi.piso = 1
@@ -262,8 +262,10 @@ class Tablero:
                         # Si la siguiente cinta mueve a la IZQUIERDA (1, 3, 5)
                         # El paquete debe aparecer a la DERECHA (x + ancho)
                         if siguiente_cinta.numero % 2 != 0:
-                            paquete_saliente.x = siguiente_cinta.x + 159  #
-                            # Ancho de cinta
+                            # --- CORRECCIÓN: Siempre aparece a la derecha (inicio de movimiento) ---
+                            # Esto hace que aparezca a la DERECHA de la cinta (x + 159)
+                            # que visualmente está justo a la IZQUIERDA de Mario (donde acaba su lado)
+                            paquete_saliente.x = siguiente_cinta.x + 159
 
                         # Si la siguiente cinta mueve a la DERECHA (2, 4)
                         # El paquete debe aparecer a la IZQUIERDA (x)
@@ -306,6 +308,12 @@ class Tablero:
                 # El * desempaqueta la tupla (0, u, v, w, h, colkey)
                 pyxel.blt(p.x, p.y, *p.sprite)
 
+        # --- COLUMNA CENTRAL (Forma simple) ---
+        for cinta in self.cintas:
+            # Dibuja un trozo de columna por CADA cinta.
+            # Si dos cintas están a la misma altura, se dibujará dos veces (no se nota).
+            pyxel.blt(184, cinta.y - 3, 0, 136, 8, 16, 16)
+
         # DEBUG: Ver dónde están las cintas invisibles (Puntos Rojos)
         # Esto te ayudará a saber si la lógica coincide con el dibujo
         for cinta in self.cintas:
@@ -323,5 +331,3 @@ class Tablero:
             # 3. Usa un píxel real (pset) o una cruz para marcar la posición exacta
             # Esto asegura que lo que ves es EXACTAMENTE donde está el ratón
             pyxel.pset(pyxel.mouse_x, pyxel.mouse_y, 7)
-
-

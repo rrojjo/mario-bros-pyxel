@@ -15,12 +15,12 @@ class Paquete:
             self.indice_sprite = cinta_actual - 1
         self.velocidad=1
         self.sprites = {
-            0: (0, 32, 36, 16, 12),  # Forma Inicial
-            1: (0, 48, 36, 16, 12),  # Forma 1 (Cinta 1)
-            2: (0, 64, 36, 16, 12),  # Forma 2 (Cinta 2)
-            3: (0, 80, 36, 16, 12),  # Forma 3 (Cinta 3)
-            4: (0, 96, 36, 16, 12),  # Forma 4 (Cinta 4)
-            5: (0, 112, 36, 16, 12)
+            0: (0, 32, 36, 16, 12,0),  # Forma Inicial
+            1: (0, 48, 36, 16, 12,0),  # Forma 1 (Cinta 1)
+            2: (0, 64, 36, 16, 12,0),  # Forma 2 (Cinta 2)
+            3: (0, 80, 36, 16, 12,0),  # Forma 3 (Cinta 3)
+            4: (0, 96, 36, 16, 12,0),  # Forma 4 (Cinta 4)
+            5: (0, 112, 36, 16, 12,0)
             # Forma 5 (Cinta 5 - Última antes del camión)
         }
 
