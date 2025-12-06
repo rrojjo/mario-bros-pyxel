@@ -62,7 +62,7 @@ class Tablero:
         # x_izq: Donde está Luigi esperando
         # x_der: Donde está Mario esperando
         x_izq = 106
-        x_der = 265  # Un poco antes de 299 para que conecte con el tabique
+        x_der = 282  # Un poco antes de 299 para que conecte con el tabique
 
         # Cinta 0 (Inicio Mario - Abajo Derecha)
         self.cintas.append(
@@ -265,7 +265,7 @@ class Tablero:
                             # --- CORRECCIÓN: Siempre aparece a la derecha (inicio de movimiento) ---
                             # Esto hace que aparezca a la DERECHA de la cinta (x + 159)
                             # que visualmente está justo a la IZQUIERDA de Mario (donde acaba su lado)
-                            paquete_saliente.x = siguiente_cinta.x + 159
+                            paquete_saliente.x = siguiente_cinta.x + 146
 
                         # Si la siguiente cinta mueve a la DERECHA (2, 4)
                         # El paquete debe aparecer a la IZQUIERDA (x)

@@ -10,7 +10,7 @@ class Cinta:
         self.piso = piso
         self._paquetes=[] #lista de paquetes en la cinta
 
-        self.ancho=159 #ancho visual de la cinta
+        self.ancho=146 #ancho visual de la cinta
 
 #Propiedad numero
 
