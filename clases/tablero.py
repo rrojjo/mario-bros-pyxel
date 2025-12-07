@@ -219,6 +219,8 @@ class Tablero:
             return  # Se acaba la función aquí (el juego se congela)
 
         self.jefe.update()
+        self.mario.update()
+        self.luigi.update()
 
         # --- ESTADO: CASTIGO ---
         if self.estado_juego == CASTIGO:
@@ -419,6 +421,11 @@ class Tablero:
 
                 if recogido:
                     self.puntos += 1
+                    # --- ACTIVAR ANIMACIÓN DE RECOGIDA ---
+                    if cinta.numero in [0, 2, 4]:
+                        self.mario.animar_recogida()
+                    else:
+                        self.luigi.animar_recogida()
 
                     if cinta.numero < 5:
                         # Pasamos a la siguiente cinta (La de ARRIBA)

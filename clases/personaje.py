@@ -14,23 +14,78 @@ class Personaje:
         else:  # Mario
             self.u_original = 16
 
+        # Temporizador para la animación de coger paquete
+        self.timer_animacion = 0
+
         # Creamos el sprite inicial
         self.actualizar_sprite()
 
+    def update(self):
+        """Actualiza temporizadores internos"""
+        if self.timer_animacion > 0:
+            self.timer_animacion -= 1
+            # Cuando acaba la animación, forzamos actualización para volver a normal
+            if self.timer_animacion == 0:
+                self.actualizar_sprite()
+
+        # IMPORTANTE: Mario en el piso 0 siempre revisa su orientación
+        if self.nombre == "Mario" and self.piso == 0 and self.timer_animacion == 0:
+            self.actualizar_sprite()
+
+    def animar_recogida(self):
+        """Activa la animación de cargar paquete durante unos frames"""
+        self.timer_animacion = 10  # Duración de la pose (aprox 0.3 seg)
+        self.actualizar_sprite()
+
     def actualizar_sprite(self):
-        """Regenera la tupla del sprite según si está invertido o no"""
-        ancho = 16
-        if self.invertido:
-            ancho = -16  # Invertir horizontalmente
+        """
+        Calcula qué sprite mostrar basándose en:
+        1. Si está cogiendo un paquete (Prioridad máxima).
+        2. Si es Mario en el piso 0 (Regla especial).
+        3. Estado normal o invertido (Castigo).
+        """
 
-        self.sprite = (0, self.u_original, 0, 16, 16, 15)
+        # --- 1. COORDENADAS DEL SPRITE (u, v) ---
+        if self.timer_animacion > 0:
+            # Sprite de recogida solicitado: (0, 16)
+            u = 0
+            v = 16
+        else:
+            # Sprite normal (Idle)
+            u = self.u_original
+            v = 0
 
-        # Nota: pyxel.blt usa el ancho para hacer el flip.
-        # Si queremos que miren al lado CONTRARIO, cambiamos el signo del ancho
-        # al dibujarlo. Pero como self.sprite es una tupla fija, la modificamos aquí.
+        # --- 2. ORIENTACIÓN (ANCHO) ---
+        ancho = 16  # Por defecto, mirando a la derecha (o normal del sprite)
 
-        # Truco: Si blt recibe ancho negativo, voltea la imagen.
-        self.sprite = (0, self.u_original, 0, ancho, 16, 15)
+        if self.nombre == "Mario":
+            # REGLA 1: Animación de recogida -> Invertido
+            if self.timer_animacion > 0:
+                ancho = -16
+
+            # REGLA 2: Mario esperando en el piso 0 -> Invertido
+            elif self.piso == 0:
+                ancho = -16
+
+            # REGLA 3: Estado general invertido (por castigo del Jefe)
+            elif self.invertido:
+                ancho = -16
+
+            # Normal (Pisos 2, 4 esperando)
+            else:
+                ancho = 16
+
+        elif self.nombre == "Luigi":
+            # REGLA: Luigi solo se invierte si está castigado (Jefe)
+            # O si quisieras que la recogida fuera invertida (no especificado, lo dejo normal)
+            if self.invertido:
+                ancho = -16
+            else:
+                ancho = 16
+
+        # --- 3. GENERAR TUPLA FINAL ---
+        # (banco, u, v, ancho, alto, color_transparente)
+        self.sprite = (0, u, v, ancho, 16, 15)
 
     def set_mirada_invertida(self, estado: bool):
         self.invertido = estado
@@ -107,6 +162,7 @@ class Personaje:
         self.piso += 2
         # Actualizamos la coordenada visual
         self.y = nueva_y
+        self.actualizar_sprite()
 
     def bajar(self, nueva_y: int):
         """
@@ -117,5 +173,4 @@ class Personaje:
         self.piso -= 2
         # Actualizamos la coordenada visual
         self.y = nueva_y
-
-
+        self.actualizar_sprite()
