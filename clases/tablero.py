@@ -26,7 +26,7 @@ class Tablero:
 
         # --- CONTROL DE ESTADOS (SPRINT 4) ---
         self.estado_juego = JUGANDO
-        self.tiempo_reparto = 120  # 120 frames = 2 segundos de descanso
+        self.tiempo_reparto = 180  # 180 frames = 3 segundos de descanso
         self.contador_reparto = 0
 
         # --- 1. DEFINICIÓN DE ALTURAS (Basado en tu imagen) ---
@@ -72,34 +72,32 @@ class Tablero:
         self.cintas = []
 
         # Coordenadas X aproximadas (AJUSTA ESTOS VALORES SEGÚN TU DIBUJO)
-        # x_izq: Donde está Luigi esperando
-        # x_der: Donde está Mario esperando
-        x_izq = 106
-        x_der = 282  # Un poco antes de 299 para que conecte con el tabique
+        x_cinta0 = 282
+        x_resto_cintas = 106
 
         # Cinta 0 (Inicio Mario - Abajo Derecha)
         self.cintas.append(
-            Cinta(numero=0, x=x_der, y=152, piso=0))
+            Cinta(numero=0, x=x_cinta0, y=152, piso=0))
 
         # Cinta 1 (Luigi - Nivel 1 Izq)
         self.cintas.append(
-            Cinta(numero=1, x=x_izq, y=152, piso=1))
+            Cinta(numero=1, x=x_resto_cintas, y=152, piso=1))
 
         # Cinta 2 (Mario - Nivel 1 Der)
         self.cintas.append(
-            Cinta(numero=2, x=x_izq, y=128, piso=2))
+            Cinta(numero=2, x=x_resto_cintas, y=128, piso=2))
 
         # Cinta 3 (Luigi - Nivel 2 Izq)
         self.cintas.append(
-            Cinta(numero=3, x=x_izq, y=104, piso=3))
+            Cinta(numero=3, x=x_resto_cintas, y=104, piso=3))
 
         # Cinta 4 (Mario - Nivel 2 Der)
         self.cintas.append(
-            Cinta(numero=4, x=x_izq, y=80, piso=4))
+            Cinta(numero=4, x=x_resto_cintas, y=80, piso=4))
 
         # Cinta 5 (Luigi - Nivel 3 - Hacia el camión)
         self.cintas.append(
-            Cinta(numero=5, x=x_izq, y=56, piso=5))
+            Cinta(numero=5, x=x_resto_cintas, y=56, piso=5))
 
 
 
@@ -180,6 +178,21 @@ class Tablero:
             while len(cinta.paquetes) > 0:
                 cinta.retirar_paquete(cinta.paquetes[0])
 
+    def iniciar_reparto(self):
+        """
+        Activa el estado de REPARTO.
+        Las cintas se paran y se limpia el borde.
+        """
+        self.estado_juego = REPARTO
+        self.contador_reparto = self.tiempo_reparto
+
+        # REGLA: Si un paquete está en la última posición, desaparece.
+        for cinta in self.cintas:
+            paquete_borde = cinta.paquete_llego_al_final()
+            if paquete_borde:
+                # Lo retiramos sin sumar puntos ni fallos (desaparece)
+                cinta.retirar_paquete(paquete_borde)
+
 
     def update(self):
         """ Este es un metodo pyxel que se ejecuta en cada iteración del
@@ -193,7 +206,45 @@ class Tablero:
         # --- LÓGICA DE GAME OVER ---
         # Si tenemos 3 fallos o más, NO ejecutamos nada más del juego
         if self.fallos >= 3:
+            if pyxel.btnp(pyxel.KEY_R):  # Opción de reinicio rápido
+                self.reiniciar_juego()
             return  # Se acaba la función aquí (el juego se congela)
+
+        # --- LÓGICA DE REPARTO (PAUSA) ---
+        if self.estado_juego == REPARTO:
+            # Descontamos tiempo
+            self.contador_reparto -= 1
+
+            # Animación de paquetes cayendo (opcional, dejamos que terminen de caer)
+            velocidad_caida = 4
+            paquetes_validos = []
+            for p in self.paquetes_cayendo:
+                p.y += velocidad_caida
+                if p.y < self.alto:
+                    paquetes_validos.append(p)
+            self.paquetes_cayendo = paquetes_validos
+
+            # Si acaba el tiempo, volvemos a jugar
+            if self.contador_reparto <= 0:
+                self.estado_juego = JUGANDO
+                self.camion.vaciar()  # El camión vuelve vacío y listo
+
+            return  # IMPORTANTE: Salimos aquí para NO mover personajes ni cintas
+
+        # ==========================================
+        #  LÓGICA PRINCIPAL (SOLO SI ESTADO == JUGANDO)
+        # ==========================================
+
+        # --- Actualizar paquetes cayendo ---
+        velocidad_caida = 4
+        for p in self.paquetes_cayendo:
+            p.y += velocidad_caida
+
+        paquetes_validos = []
+        for p in self.paquetes_cayendo:
+            if p.y < self.alto:
+                paquetes_validos.append(p)
+        self.paquetes_cayendo = paquetes_validos
         # --- MOVIMIENTO DE MARIO (Flechas) ---
         # Sube y baja de 2 en 2 pisos (0 -> 2 -> 4)
 
@@ -360,7 +411,7 @@ class Tablero:
 
                         # El paquete entra al camión
 
-                        self.camion.cargar_paquete()
+                        self.camion.cargar_paquete(paquete_saliente)
 
                         # REGLA 2: +10 puntos SOLO si el camión se completa
 
@@ -371,7 +422,7 @@ class Tablero:
 
                             # (En el siguiente paso haremos que el camión "se vaya" de reparto)
 
-                            self.camion.vaciar()
+                            self.iniciar_reparto()
                 else:
                     self.fallos += 1
                     # --- NUEVO: En lugar de desaparecer, pasa a la lista de caídos ---
@@ -390,7 +441,16 @@ class Tablero:
         # Dibuja el personaje, los parámetros de pyxel.blt son (x, y, sprite tuple)
         pyxel.blt(self.mario.x, self.mario.y, *self.mario.sprite)
         pyxel.blt(self.luigi.x, self.luigi.y, *self.luigi.sprite)
-        pyxel.blt(self.camion.x, self.camion.y, *self.camion.sprite)
+        # CAMIÓN: Solo se dibuja si NO estamos en reparto (simula que se fue)
+        if self.estado_juego != REPARTO:
+            pyxel.blt(self.camion.x, self.camion.y, *self.camion.sprite)
+            # NUEVO: Dibujar la carga apilada dentro del camión
+            for caja in self.camion.carga_visual:
+                # caja es un diccionario con x, y, sprite
+                pyxel.blt(caja["x"], caja["y"], *caja["sprite"])
+        else:
+            # Mensaje opcional durante el reparto
+            pyxel.text(10, 60, "REPARTO...", 10)
 
         # PAQUETES (Sprint 3)
         for cinta in self.cintas:
@@ -419,7 +479,10 @@ class Tablero:
             # TEXTO GRANDE CENTRADO (Más o menos)
             pyxel.text(self.ancho // 2 - 20, self.alto // 2, "GAME OVER", 8)
             pyxel.text(self.ancho // 2 - 35, self.alto // 2 + 10,
-                       "Pulsa Q para salir", 7)
+                       "Pulsa Q para salir", 1)
+            pyxel.text(self.ancho // 2 - 35, self.alto // 2 + 20, "Pulsa R "
+                                                                  "para "
+                                                                  "reiniciar", 1)
 
         pyxel.text(100, 5, f"FALLOS: {self.fallos}/3", color_fallos)
 

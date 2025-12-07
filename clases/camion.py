@@ -8,6 +8,8 @@ class Camion:
         self._paquetes_cargados=0 #contador
         self._capacidad=8 #fijo
         self.sprite= (0, 32, 64, 47, 48, 15)
+        # NUEVO: Lista para guardar las coordenadas y sprites de las cajas en el camión
+        self.carga_visual = []
 
 #Propiedad x
 
@@ -51,9 +53,42 @@ class Camion:
 
 #LÓGICA DE COMPORTAMIENTO
 
-    def cargar_paquete(self):
-        #Incrementa el contador de paquetes si no está lleno.
+    def cargar_paquete(self, paquete_objeto):
+        """
+        Recibe el objeto paquete, calcula su posición en la pila
+        y guarda los datos para dibujarlo.
+        """
         if self._paquetes_cargados < self._capacidad:
+            # 1. CÁLCULO DE POSICIÓN (APILADO)
+            # Vamos a hacer 2 columnas de 4 cajas cada una.
+            # Columna 0: Paquetes 0, 2, 4, 6
+            # Columna 1: Paquetes 1, 3, 5, 7
+
+            # Índice actual (0 a 7)
+            idx = self._paquetes_cargados
+
+            columna = idx % 2
+            fila = idx // 2
+
+            # Ajustes visuales relativos a la X, Y del camión
+            # offset_x: Movemos las cajas a la parte trasera del camión
+            # offset_y: Las apilamos hacia arriba (restamos Y)
+
+            offset_x = 17 +(columna * 16)  # Separación horizontal de 10px
+            offset_y = 26 + (-fila * 12)  # Separación vertical de 6px
+
+            nueva_x = self.x + offset_x
+            nueva_y = self.y + offset_y
+
+            # Guardamos un diccionario con lo necesario para dibujar
+            info_caja = {
+                "x": nueva_x,
+                "y": nueva_y,
+                "sprite": paquete_objeto.sprite
+                # Copiamos el sprite del paquete
+            }
+
+            self.carga_visual.append(info_caja)
             self._paquetes_cargados += 1
 
     def esta_lleno(self) -> bool:
@@ -63,4 +98,5 @@ class Camion:
     def vaciar(self):
         #Resetea el contador de paquetes (se usará cuando el camión vuelva  del reparto).
         self._paquetes_cargados = 0
+        self.carga_visual = []  # Limpiamos también el dibujo
 
