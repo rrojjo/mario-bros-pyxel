@@ -4,13 +4,15 @@ from clases.personaje import Personaje
 from clases.camion import Camion
 from clases.cinta import Cinta
 from clases.paquete import Paquete
+from clases.jefe import Jefe
 import pyxel
 
 # --- CONSTANTES DE ESTADO ---
 JUGANDO = 1
 REPARTO = 2
 GAMEOVER = 3
-
+JEFE_MANDANDO = 4
+CASTIGO = 5
 
 class Tablero:
     """Esta clase contiene un simple tablero"""
@@ -99,13 +101,19 @@ class Tablero:
         self.cintas.append(
             Cinta(numero=5, x=x_resto_cintas, y=56, piso=5))
 
+        # Crear JEFE
+        # Lo colocamos abajo a la izquierda para finalizar el descanso
+        self.jefe = Jefe(0, 0)
 
+        # Variables para restaurar personaje tras castigo
+        self.personaje_castigado = None
+        self.memoria_personaje = {}  # Para guardar piso y Y
 
         # Marcadores
         self.puntos = 0
         self.fallos = 0
 
-        # --- NUEVO: Lista para animación de caída ---
+        # --- Lista para animación de caída ---
         self.paquetes_cayendo = []
 
         # SPRINT 3: Generador de paquetes
@@ -210,6 +218,23 @@ class Tablero:
                 self.reiniciar_juego()
             return  # Se acaba la función aquí (el juego se congela)
 
+        self.jefe.update()
+
+        # --- ESTADO: CASTIGO ---
+        if self.estado_juego == CASTIGO:
+            # Esperamos a que el jefe termine
+            if not self.jefe.visible:
+                # Restaurar personaje
+                p = self.personaje_castigado
+                datos = self.memoria_personaje
+
+                p.piso = datos['piso']
+                p.y = datos['y']
+                p.set_mirada_invertida(False)  # Vuelve a mirar normal
+
+                self.estado_juego = JUGANDO
+            return
+
         # --- LÓGICA DE REPARTO (PAUSA) ---
         if self.estado_juego == REPARTO:
             # Descontamos tiempo
@@ -226,10 +251,22 @@ class Tablero:
 
             # Si acaba el tiempo, volvemos a jugar
             if self.contador_reparto <= 0:
-                self.estado_juego = JUGANDO
                 self.camion.vaciar()  # El camión vuelve vacío y listo
+                # --- ACTIVAR AL JEFE ---
+                self.estado_juego = JEFE_MANDANDO
+                # Aparece por 60 frames (1 segundo),
+                # False = mirando a la derecha (hacia Luigi o general)
+                # Puedes poner True para que mire a Mario si prefieres.
+                self.jefe.aparecer_trabajo(39, 171, 180)
+            return
 
-            return  # IMPORTANTE: Salimos aquí para NO mover personajes ni cintas
+        # --- ESTADO: JEFE MANDANDO (Post-reparto) ---
+        if self.estado_juego == JEFE_MANDANDO:
+            # Esperamos a que el jefe termine su animación
+            if not self.jefe.visible:
+                # Cuando el jefe se oculta, volvemos a jugar
+                self.estado_juego = JUGANDO
+            return
 
         # ==========================================
         #  LÓGICA PRINCIPAL (SOLO SI ESTADO == JUGANDO)
@@ -245,8 +282,6 @@ class Tablero:
             if p.y < self.alto:
                 paquetes_validos.append(p)
         self.paquetes_cayendo = paquetes_validos
-        # --- MOVIMIENTO DE MARIO (Flechas) ---
-        # Sube y baja de 2 en 2 pisos (0 -> 2 -> 4)
 
         # --- Actualizar paquetes cayendo (Física de gravedad) ---
         velocidad_caida = 4
@@ -267,6 +302,9 @@ class Tablero:
 
         # 5. Reemplazamos la lista original con la lista filtrada
         self.paquetes_cayendo = paquetes_validos
+
+        # --- MOVIMIENTO DE MARIO (Flechas) ---
+        # Sube y baja de 2 en 2 pisos (0 -> 2 -> 4)
 
         # SUBIR
         if pyxel.btnp(pyxel.KEY_UP):
@@ -424,9 +462,52 @@ class Tablero:
 
                             self.iniciar_reparto()
                 else:
+                    # ============ FALLO DETECTADO ============
                     self.fallos += 1
-                    # --- NUEVO: En lugar de desaparecer, pasa a la lista de caídos ---
                     self.paquetes_cayendo.append(paquete_saliente)
+
+                    # 1. Identificar culpable
+                    es_culpa_mario = (
+                                cinta.numero % 2 == 0)  # Pares (0,2,4) son lado Mario
+
+                    if es_culpa_mario:
+                        culpable = self.mario
+                    else:
+                        culpable = self.luigi
+
+                    # 2. Guardar estado actual
+                    self.personaje_castigado = culpable
+                    self.memoria_personaje = {
+                        'piso': culpable.piso,
+                        'y': culpable.y
+                    }
+
+                    # 3. Aplicar Castigo (Posición y Mirada)
+                    culpable.set_mirada_invertida(True)
+
+                    if es_culpa_mario:
+                        # Mario al piso superior (4) -> Y=75
+                        culpable.piso = 4
+                        culpable.y = 75
+                        # Jefe castiga a Mario
+                        self.jefe.aparecer_castigo(295, 75, 180,
+                                                   mirar_izquierda=True)
+                        # mirar_izquierda=False porque Mario está a la derecha,
+                        # el jefe se pone en 295 (misma X?), debería mirar a Mario?
+                        # Si están en la misma X, se superponen.
+                        # Asumo que 295 es la coord del jefe y mira hacia Mario o hacia el centro.
+                        # Según instrucciones: "mirando al lado contrario al que suele mirar" (el personaje)
+                    else:
+                        # Luigi al piso superior (5) -> Y=59
+                        culpable.piso = 5
+                        culpable.y = 59
+                        # Jefe castiga a Luigi
+                        self.jefe.aparecer_castigo(77, 59, 180,
+                                                   mirar_izquierda=False)
+
+                    # 4. Cambiar estado
+                    self.estado_juego = CASTIGO
+                    return
 
     def draw(self):
         """Este es un metodo pyxel que se ejecuta en cada iteración del
@@ -459,7 +540,7 @@ class Tablero:
                 # El * desempaqueta la tupla (0, u, v, w, h, colkey)
                 pyxel.blt(p.x, p.y, *p.sprite)
 
-        # --- NUEVO: Dibujar paquetes cayendo ---
+        # --- Dibujar paquetes cayendo ---
         for p in self.paquetes_cayendo:
             pyxel.blt(p.x, p.y, *p.sprite)
 
@@ -486,21 +567,15 @@ class Tablero:
 
         pyxel.text(100, 5, f"FALLOS: {self.fallos}/3", color_fallos)
 
+        # --- DIBUJAR AL JEFE ---
+        self.jefe.draw()
 
-        # DEBUG: Ver dónde están las cintas invisibles (Puntos Rojos)
-        # Esto te ayudará a saber si la lógica coincide con el dibujo
-        for cinta in self.cintas:
-            pyxel.pset(cinta.x, cinta.y, 8)
-            # Texto pequeño para identificar cintas
-            pyxel.text(cinta.x, cinta.y - 6, str(cinta.numero), 5)
-            # --- Código corregido ---
+        # 1. Muestra la coordenada REAL (sin sumar +1 ni +5)
+        coord_texto = f"{pyxel.mouse_x},{pyxel.mouse_y}"
 
-            # 1. Muestra la coordenada REAL (sin sumar +1 ni +5)
-            coord_texto = f"{pyxel.mouse_x},{pyxel.mouse_y}"
+        # 2. Dibuja el texto un poco apartado para que no tape el cursor
+        pyxel.text(pyxel.mouse_x + 5, pyxel.mouse_y - 10, coord_texto, 7)
 
-            # 2. Dibuja el texto un poco apartado para que no tape el cursor
-            pyxel.text(pyxel.mouse_x + 5, pyxel.mouse_y - 10, coord_texto, 7)
-
-            # 3. Usa un píxel real (pset) o una cruz para marcar la posición exacta
-            # Esto asegura que lo que ves es EXACTAMENTE donde está el ratón
-            pyxel.pset(pyxel.mouse_x, pyxel.mouse_y, 7)
+        # 3. Usa un píxel real (pset) o una cruz para marcar la posición exacta
+        # Esto asegura que lo que ves es EXACTAMENTE donde está el ratón
+        pyxel.pset(pyxel.mouse_x, pyxel.mouse_y, 7)

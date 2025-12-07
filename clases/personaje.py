@@ -7,12 +7,34 @@ class Personaje:
         self.y = y
         self.piso = piso
         self.nombre = nombre
+        self.invertido = False
 
         if self.nombre == "Luigi":
-            x_sprite = 0
-        else: # Mario
-            x_sprite = 16
-        self.sprite = (0, x_sprite, 0, 16, 16, 15)
+            self.u_original = 0
+        else:  # Mario
+            self.u_original = 16
+
+        # Creamos el sprite inicial
+        self.actualizar_sprite()
+
+    def actualizar_sprite(self):
+        """Regenera la tupla del sprite según si está invertido o no"""
+        ancho = 16
+        if self.invertido:
+            ancho = -16  # Invertir horizontalmente
+
+        self.sprite = (0, self.u_original, 0, 16, 16, 15)
+
+        # Nota: pyxel.blt usa el ancho para hacer el flip.
+        # Si queremos que miren al lado CONTRARIO, cambiamos el signo del ancho
+        # al dibujarlo. Pero como self.sprite es una tupla fija, la modificamos aquí.
+
+        # Truco: Si blt recibe ancho negativo, voltea la imagen.
+        self.sprite = (0, self.u_original, 0, ancho, 16, 15)
+
+    def set_mirada_invertida(self, estado: bool):
+        self.invertido = estado
+        self.actualizar_sprite()
 
     #Propiedad x
 
