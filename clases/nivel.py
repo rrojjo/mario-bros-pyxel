@@ -28,7 +28,7 @@ class Nivel:
         if not isinstance(valor, str):
             raise TypeError(
                 "La dificultad debe ser una cadena " + str(type(valor)))
-        elif valor not in ["FACIL", "MEDIO", "EXTREMO", "CRAZY"]:
+        elif valor not in ["FACIL", "MEDIO"]:
             raise ValueError("Dificultad no reconocida: " + str(valor))
         else:
             self.__dificultad = valor
@@ -82,32 +82,31 @@ class Nivel:
     def _configurar_dimensiones(self):
         """Establece la resolución de la ventana según la dificultad."""
 
-        if self.dificultad == "FACIL" or self.dificultad == "CRAZY":
+        if self.dificultad == "FACIL" or self.dificultad == "MEDIO":
             self.ancho_pantalla = 368
             self.alto_pantalla = 192
 
-        elif self.dificultad == "MEDIO" or self.dificultad == "EXTREMO":
-            self.ancho_pantalla = 368
-            self.alto_pantalla = 192
+        # Preparado para poder implementar un nivel con un tamaño de mapa mayor
+        # elif self.dificultad == "EXTREMO":
+            # self.ancho_pantalla = 736
+            # self.alto_pantalla = 384
 
         else:
             raise ValueError("Dificultad no reconocida en dimensiones: " + str(
                 self.dificultad))
 
     def _configurar_cintas(self):
-        if self.dificultad == "FACIL" or self.dificultad == "CRAZY":
+        if self.dificultad == "FACIL":
             return 6  # Cintas 0 a 5
         elif self.dificultad == "MEDIO":
             return 8  # Cintas 0 a 7
-        elif self.dificultad == "EXTREMO":
-            return 10  # Cintas 0 a 9
         else:
             return 6
 
     def _configurar_pisos(self):
-        if self.dificultad == "FACIL" or self.dificultad == "CRAZY":
+        if self.dificultad == "FACIL":
             self.num_pisos = 5  # Pisos 0 a 5
-        elif self.dificultad == "MEDIO" or self.dificultad == "EXTREMO":
+        elif self.dificultad == "MEDIO":
             self.num_pisos = 7  # Pisos 0 a 7
 
     def _configurar_puntos_paquetes(self):
@@ -119,9 +118,5 @@ class Nivel:
             return 50
         elif self.dificultad == "MEDIO":
             return 30
-        elif self.dificultad == "EXTREMO":
-            return 30
-        elif self.dificultad == "CRAZY":
-            return 20
         else:
             return 50
