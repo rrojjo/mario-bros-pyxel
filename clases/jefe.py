@@ -79,7 +79,7 @@ class Jefe:
                     u = 0
                 else:
                     u = 16
-                texto = "A TRABAJAAAAR!"
+                texto = "¡A TRABAJAAAAR!"
 
             elif self.modo == "CASTIGO":
                 # Animación: (0, 48) y (0, 64) -> Coordenadas verticales
