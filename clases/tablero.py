@@ -5,68 +5,134 @@ from clases.camion import Camion
 from clases.cinta import Cinta
 from clases.paquete import Paquete
 from clases.jefe import Jefe
+from clases.nivel import Nivel
 import pyxel
 
 # --- CONSTANTES DE ESTADO ---
+MENU = 0
 JUGANDO = 1
 REPARTO = 2
 GAMEOVER = 3
 JEFE_MANDANDO = 4
 CASTIGO = 5
 
+
 class Tablero:
     """Esta clase contiene un simple tablero"""
 
-    def __init__(self, ancho: int, alto: int, pisos, puntos_levelup: int):
-        # 1. Asignar atributos usando los setters
-        self.ancho = ancho
-        self.alto = alto
-        self.pisos = pisos
+    def __init__(self):
+        # Inicializamos Pyxel con el tamaño MÁXIMO posible (240 de alto para Nivel Medio)
+        # De esta forma mantenemos la relación de aspecto sin reiniciar la ventana.
+        self.ancho_max = 368
+        self.alto_max = 192
 
-        # Guardamos la regla de dificultad
-        self.puntos_levelup = puntos_levelup
+        pyxel.init(self.ancho_max, self.alto_max, title="Mario Bros Game")
+        pyxel.load("assets/graficosprc.pyxres")
 
-        # --- CONTROL DE ESTADOS (SPRINT 4) ---
-        self.estado_juego = JUGANDO
+        # Estado inicial: MENÚ
+        self.estado_juego = MENU
+
+        # Opciones de menú
+        self.dificultades_disponibles = ["FACIL", "MEDIO"]
+        self.indice_dificultad = 0
+
+        # Definir sonidos
+        self.definir_sonidos()
+
+        # Las variables del juego se inician en 'configurar_partida'
+        self.mario = None
+        self.luigi = None
+        self.camion = None
+        self.jefe = None
+        self.cintas = []
+        self.paquetes_cayendo = []
+        self.puntos = 0
+        self.fallos = 0
+
+        # Ejecutando el juego
+        pyxel.run(self.update, self.draw)
+
+    def definir_sonidos(self):
+        """Define los efectos de sonido en los bancos de Pyxel"""
+        pyxel.sound(0).set("g2", "p", "7", "n", 4)
+        pyxel.sound(1).set("c1d1", "n", "7", "f", 10)
+        pyxel.sound(2).set("c3e3g3c4", "s", "6", "n", 8)
+        pyxel.sound(3).set("c3b2a2g2", "t", "7", "s", 15)
+
+    def configurar_partida(self, dificultad: str):
+        """
+        Configura todas las coordenadas, cintas y personajes
+        según la dificultad elegida.
+        """
+        self.nivel = Nivel(dificultad)
+
+        self.ancho = self.nivel.ancho_pantalla
+        self.alto = self.nivel.alto_pantalla
+        self.puntos_levelup = self.nivel.puntos_levelup
+
+        # Reset de marcadores
+        self.puntos = 0
+        self.fallos = 0
         self.tiempo_reparto = 60
         self.contador_reparto = 0
         self.camion_volviendo = False
+        self.paquetes_cayendo = []
+        self.contador_frames = 0
+        self.tiempo_aparicion = 120
 
-        # --- 1. DEFINICIÓN DE ALTURAS (Basado en tu imagen) ---
-        # Mapeamos: Número de Piso Lógico -> Coordenada Y visual
-        # Esto soluciona que las distancias entre pisos no sean iguales.
+        # --- CÁLCULO DE OFFSET Y MAPA ---
+        # Si es MEDIO (alto 240), usamos todo el alto.
+        # Si es FACIL (alto 192), dibujamos arriba (offset 0) y sobra negro abajo.
 
-        # PISO 0: Suelo común (Y=154 según tu código anterior)
-        suelo_y = 155
+        if dificultad == "MEDIO":
+            # Diferencia de altura para "bajar" el suelo y que quepan más pisos arriba
+            self.offset_y = 0  # 240 - 192
 
-        # ALTURAS MARIO (Lado Derecho - Pisos Pares)
-        # Piso 0: Suelo
-        # Piso 2: Primera plataforma derecha
-        # Piso 4: Segunda plataforma derecha
-        # Piso 6: Tercera plataforma derecha (si existe)
+            # Coordenada V del Tilemap (en TILES) para el fondo de nivel medio.
+            # Según instrucciones: Coordenadas 0, 39 del tilemap.
+            self.tilemap_y = 24 * 8  # Multiplicamos por 8 para tener píxeles
+        else:
+            # Nivel FACIL
+            self.offset_y = 0
+            self.tilemap_y = 0
+
+        # --- 1. DEFINICIÓN DE ALTURAS ---
+        # Base (Piso 0) desplazado según el offset (más abajo en nivel medio)
+        suelo_y = 155 + self.offset_y
+
+        # ALTURAS MARIO (Pisos Pares)
         self.alturas_mario = {
             0: suelo_y,
-            2: 123,  # Aprox 34px más arriba
-            4: 75,  # Aprox 34px más arriba
+            2: 123 + self.offset_y,
+            4: 75 + self.offset_y,
         }
 
-        # ALTURAS LUIGI (Lado Izquierdo - Pisos Impares)
-        # Nota: Luigi empieza en el suelo (que trataremos visualmente como inicio)
-        # pero su primer "salto" lógico es al Piso 1.
-        # Piso 1: Primera plataforma izquierda
-        # Piso 3: Segunda plataforma izquierda
-        # Piso 5: Plataforma del camión
+        # Si hay más pisos (Nivel Medio), añadimos altura superior
+        if self.nivel.num_pisos > 5:
+            # Piso 6: 48 píxeles más arriba que el piso 4 original
+            self.alturas_mario[6] = 75 + self.offset_y - 48
+
+            # ALTURAS LUIGI (Pisos Impares)
         self.alturas_luigi = {
-            1: suelo_y,  # Luigi empieza abajo
-            3: 107,  # Misma altura que el piso 2 de Mario
-            5: 59,  # Misma altura que el piso 4 de Mario
+            1: suelo_y,
+            3: 107 + self.offset_y,
+            5: 59 + self.offset_y,
         }
 
-        # --- CREAR OBJETOS INICIALES ---
-        # Guardamos las coordenadas iniciales para usarlas en el reinicio
+        if self.nivel.num_pisos > 5:
+            # Piso 7: 48 píxeles más arriba que el piso 5 original
+            self.alturas_luigi[7] = 59 + self.offset_y - 48
+
+        # --- CREAR OBJETOS ---
+        # Posiciones iniciales
         self.inicio_mario = {'x': 265, 'y': self.alturas_mario[0], 'piso': 0}
         self.inicio_luigi = {'x': 93, 'y': self.alturas_luigi[1], 'piso': 1}
-        self.inicio_camion = {'x': 10, 'y': 74}
+
+        # Altura del camión: Siempre en el piso más alto de Luigi (Impar)
+        # En fácil: Piso 5 (y=59). En Medio: Piso 7 (y=11 aprox).
+        y_camion = self.alturas_luigi[
+                       self.nivel.num_pisos] + 15  # Ajuste visual
+        self.inicio_camion = {'x': 10, 'y': y_camion}
 
         self.mario = Personaje(self.inicio_mario['x'], self.inicio_mario['y'],
                                self.inicio_mario['piso'], "Mario")
@@ -78,201 +144,71 @@ class Tablero:
         # Variables de castigo
         self.personaje_castigado = None
         self.memoria_personaje = {}
-        # --- 3. CREACIÓN DE CINTAS (CRÍTICO PARA SPRINT 3) ---
-        # Creamos las cintas invisibles donde se moverán los paquetes.
-        # Las coordenadas Y deben coincidir con las plataformas.
-        self.cintas = []
 
-        # Coordenadas X aproximadas (AJUSTA ESTOS VALORES SEGÚN TU DIBUJO)
+        # --- 3. CREACIÓN DE CINTAS ---
+        self.cintas = []
         x_cinta0 = 282
         x_resto_cintas = 106
 
-        # Cinta 0 (Inicio Mario - Abajo Derecha)
-        self.cintas.append(
-            Cinta(numero=0, x=x_cinta0, y=152, piso=0))
+        # Cintas Originales (0-5) ajustadas con offset_y
+        self.cintas.append(Cinta(0, x_cinta0, 152 + self.offset_y, 0))
+        self.cintas.append(Cinta(1, x_resto_cintas, 152 + self.offset_y, 1))
+        self.cintas.append(Cinta(2, x_resto_cintas, 128 + self.offset_y, 2))
+        self.cintas.append(Cinta(3, x_resto_cintas, 104 + self.offset_y, 3))
+        self.cintas.append(Cinta(4, x_resto_cintas, 80 + self.offset_y, 4))
+        self.cintas.append(Cinta(5, x_resto_cintas, 56 + self.offset_y, 5))
 
-        # Cinta 1 (Luigi - Nivel 1 Izq)
-        self.cintas.append(
-            Cinta(numero=1, x=x_resto_cintas, y=152, piso=1))
+        # Cintas Nuevas (MEDIO) - Se añaden encima
+        if self.nivel.num_cintas > 6:
+            # Cinta 6 (Mario) -> Encima de la 5
+            self.cintas.append(
+                Cinta(6, x_resto_cintas, 56 + self.offset_y - 24, 6))
+            # Cinta 7 (Luigi) -> Encima de la 6
+            self.cintas.append(
+                Cinta(7, x_resto_cintas, 56 + self.offset_y - 48, 7))
 
-        # Cinta 2 (Mario - Nivel 1 Der)
-        self.cintas.append(
-            Cinta(numero=2, x=x_resto_cintas, y=128, piso=2))
-
-        # Cinta 3 (Luigi - Nivel 2 Izq)
-        self.cintas.append(
-            Cinta(numero=3, x=x_resto_cintas, y=104, piso=3))
-
-        # Cinta 4 (Mario - Nivel 2 Der)
-        self.cintas.append(
-            Cinta(numero=4, x=x_resto_cintas, y=80, piso=4))
-
-        # Cinta 5 (Luigi - Nivel 3 - Hacia el camión)
-        self.cintas.append(
-            Cinta(numero=5, x=x_resto_cintas, y=56, piso=5))
-
-        # Marcadores
-        self.puntos = 0
-        self.fallos = 0
-
-        # --- Lista para animación de caída ---
-        self.paquetes_cayendo = []
-
-        # SPRINT 3: Generador de paquetes
-        self.tiempo_aparicion = 120  # Frames (2 segundos)
-        self.contador_frames = 0
-
-        # En el init se inicializará pyxel también
-        # Esta instrucción inicializará pyxel, ver la API para más parámetros
-        pyxel.init(self.ancho, self.alto, title="Mario Bros Game")
-
-        pyxel.load("assets/graficosprc.pyxres")
-
-        # --- SONIDOS (Sprint Opcional) ---
-        self.definir_sonidos()
-
-        # Ejecutando el juego
-        pyxel.run(self.update, self.draw)
-
-    # Properties and setters
-    @property
-    def ancho(self) -> int:
-        return self.__ancho
-
-    @property
-    def alto(self) -> int:
-        return self.__alto
-
-    @ancho.setter
-    def ancho(self, valor: int):
-        if not isinstance(valor, int):
-            raise TypeError(
-                "El ancho debe ser un entero " + str(type(valor)))
-        elif valor < 0:
-            raise ValueError("El ancho debe ser un número positivo")
-        else:
-            self.__ancho = valor
-
-    @alto.setter
-    def alto(self, valor: int):
-        if not isinstance(valor, int):
-            raise TypeError(
-                "El alto debe ser un entero " + str(type(valor)))
-        elif valor < 0:
-            raise ValueError(
-                "El alto debe estar un número positivo")
-        else:
-            self.__alto = valor
-
-    @property
-    def pisos(self) -> int:
-        return self.__pisos
-
-    @pisos.setter
-    def pisos(self, valor: int):
-        if not isinstance(valor, int):
-            raise TypeError(
-                "El número de pisos debe ser un entero " + str(type(valor)))
-        elif valor != 5 and valor != 7:
-            raise ValueError("El número de pisos debe ser 5 o 7")
-        else:
-            self.__pisos = valor
-
-    def definir_sonidos(self):
-        """Define los efectos de sonido en los bancos de Pyxel"""
-        # Sonido 0: RECOGIDA / PASE (Agudo y corto)
-        # Notas: g2 (sol), tono: p (pulso), vol: 7, efecto: n (ninguno), velocidad: 4
-        pyxel.sound(0).set("g2", "p", "7", "n", 4)
-
-        # Sonido 1: ERROR / CAÍDA (Grave y ruidoso)
-        # Notas: c1d1 (grave), tono: n (noise/ruido), vol: 7, efecto: f (fade out), velocidad: 10
-        pyxel.sound(1).set("c1d1", "n", "7", "f", 10)
-
-        # Sonido 2: CAMIÓN LLENO / REPARTO (Melodía rápida)
-        # Notas: c3e3g3c4 (do mi sol do), tono: s (square), vol: 6, efecto: n, velocidad: 8
-        pyxel.sound(2).set("c3e3g3c4", "s", "6", "n", 8)
-
-        # Sonido 3: GAME OVER (Melodía triste)
-        pyxel.sound(3).set("c3b2a2g2", "t", "7", "s", 15)
-
-    def reiniciar_juego(self):
-        """
-        Reinicia TOTALMENTE el juego como si fuera una partida de 0.
-        Restablece posiciones, puntuación, estados y objetos.
-        """
-        # 1. Marcadores
-        self.puntos = 0
-        self.fallos = 0
-        self.contador_frames = 0
-        self.contador_reparto = 0
-        self.camion_volviendo = False
-
-        # 2. Estado
         self.estado_juego = JUGANDO
 
-        # 3. Limpieza de Objetos Dinámicos
-        self.paquetes_cayendo = []  # Borrar paquetes en el aire
-        self.camion.vaciar()  # Borrar carga del camión
-
-        # Borrar paquetes de las cintas
-        for cinta in self.cintas:
-            while len(cinta.paquetes) > 0:
-                cinta.retirar_paquete(cinta.paquetes[0])
-
-        # 4. Restablecer Posiciones (IMPORTANTE)
-        # Mario
-        self.mario.x = self.inicio_mario['x']
-        self.mario.y = self.inicio_mario['y']
-        self.mario.piso = self.inicio_mario['piso']
-        self.mario.set_mirada_invertida(False)  # Asegurar que mira bien
-
-        # Luigi
-        self.luigi.x = self.inicio_luigi['x']
-        self.luigi.y = self.inicio_luigi['y']
-        self.luigi.piso = self.inicio_luigi['piso']
-        self.luigi.set_mirada_invertida(False)
-
-        # Camión (Por si se quedó a medio camino en la animación)
-        self.camion.x = self.inicio_camion['x']
-        self.camion.y = self.inicio_camion['y']
-
-        # Jefe (Ocultarlo si estaba visible)
-        self.jefe.visible = False
+    def reiniciar_juego(self):
+        """Reinicia la partida manteniendo la dificultad actual"""
+        self.configurar_partida(self.nivel.dificultad)
 
     def iniciar_reparto(self):
-        # SONIDO: Reproducir melodía de camión (Canal 1 para no cortar otros sonidos)
         pyxel.play(1, 2)
-        """
-        Activa el estado de REPARTO.
-        Las cintas se paran y se limpia el borde.
-        """
         self.estado_juego = REPARTO
         self.contador_reparto = self.tiempo_reparto
-        self.camion_volviendo = False  # Nos aseguramos de empezar yendo hacia fuera
-
-        # REGLA: Si un paquete está en la última posición, desaparece.
+        self.camion_volviendo = False
         for cinta in self.cintas:
             paquete_borde = cinta.paquete_llego_al_final()
             if paquete_borde:
-                # Lo retiramos sin sumar puntos ni fallos (desaparece)
                 cinta.retirar_paquete(paquete_borde)
 
-
     def update(self):
-        """ Este es un metodo pyxel que se ejecuta en cada iteración del
-        juego (cada
-        fotograma). Necesitas poner aquí todo el código que tiene que ser ejecutado en cada frame. Ahora
-        contiene sólo la lógica para mover el personaje si se pulsa una tecla."""
-        # Para salir del juego
         if pyxel.btnp(pyxel.KEY_Q):
             pyxel.quit()
 
+        # --- LÓGICA DE MENÚ ---
+        if self.estado_juego == MENU:
+            # Navegar menú
+            if pyxel.btnp(pyxel.KEY_UP) or pyxel.btnp(pyxel.KEY_DOWN):
+                if self.indice_dificultad == 0:
+                    self.indice_dificultad = 1
+                else:
+                    self.indice_dificultad = 0
+
+            # Seleccionar con ESPACIO
+            if pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN):
+                dificultad_elegida = self.dificultades_disponibles[
+                    self.indice_dificultad]
+                self.configurar_partida(dificultad_elegida)
+            return
+
         # --- LÓGICA DE GAME OVER ---
-        # Si tenemos 3 fallos o más, NO ejecutamos nada más del juego
         if self.fallos >= 3:
-            if pyxel.btnp(pyxel.KEY_R):  # Opción de reinicio rápido
-                self.reiniciar_juego()
-            return  # Se acaba la función aquí (el juego se congela)
+            if pyxel.btnp(pyxel.KEY_R):
+                # VOLVER AL MENÚ
+                self.estado_juego = MENU
+            return
 
         self.jefe.update()
         self.mario.update()
@@ -280,56 +216,43 @@ class Tablero:
 
         # --- ESTADO: CASTIGO ---
         if self.estado_juego == CASTIGO:
-            # Esperamos a que el jefe termine
             if not self.jefe.visible:
-                # Restaurar personaje
                 p = self.personaje_castigado
                 datos = self.memoria_personaje
-
                 p.piso = datos['piso']
                 p.y = datos['y']
-                p.set_mirada_invertida(False)  # Vuelve a mirar normal
-
+                p.set_mirada_invertida(False)
                 self.estado_juego = JUGANDO
             return
 
-        # --- ESTADO: REPARTO (ANIMADO) ---
+        # --- ESTADO: REPARTO ---
         if self.estado_juego == REPARTO:
             velocidad_camion = 2
-
-            # FASE 1: IRSE (Hacia la izquierda)
             if not self.camion_volviendo:
-                # Si el camión aún está visible (x > -60), lo movemos a la izquierda
                 if self.camion.x > -60:
                     self.camion.mover(-velocidad_camion)
-
-                # Si ya salió de pantalla, esperamos el tiempo de reparto
                 else:
                     self.contador_reparto -= 1
-
-                    # Si acaba el tiempo, vaciamos y empezamos a volver
                     if self.contador_reparto <= 0:
                         self.camion.vaciar()
                         self.camion_volviendo = True
-
-            # FASE 2: VOLVER (Hacia la derecha)
             else:
-                # Movemos el camión a la derecha hasta su posición original (10)
                 if self.camion.x < 10:
                     self.camion.mover(velocidad_camion)
-
-                # Si llegó a su sitio, activamos al JEFE
                 else:
-                    self.camion.x = 10  # Aseguramos posición exacta
+                    self.camion.x = 10
                     self.camion_volviendo = False
-
-                    # Transición al Jefe
                     self.estado_juego = JEFE_MANDANDO
-                    self.jefe.aparecer_trabajo(39, 171, 180)
+                    # Jefe aparece en posición de trabajo (siempre visible arriba)
+                    self.jefe.aparecer_trabajo(39, self.alturas_luigi[
+                        self.nivel.num_pisos] + 100, 180)
+                    # Corregimos Y del jefe para que salga cerca del camión o techo
+                    # En fácil sale en Y=39, 171 (No tiene sentido coordenadas fijas si cambia altura)
+                    # Lo dejamos fijo arriba relativo al techo del nivel
+                    self.jefe.aparecer_trabajo(39, 171 + self.offset_y, 180)
+            return
 
-            return  # IMPORTANTE: Salimos para no procesar juego
-
-        # --- ESTADO: JEFE MANDANDO (Post-reparto) ---
+        # --- ESTADO: JEFE MANDANDO ---
         if self.estado_juego == JEFE_MANDANDO:
             if not self.jefe.visible:
                 self.estado_juego = JUGANDO
@@ -338,58 +261,40 @@ class Tablero:
         # ==========================================
         #  LÓGICA PRINCIPAL (JUGANDO)
         # ==========================================
-
-        # Actualizar paquetes cayendo
         velocidad_caida = 4
         paquetes_validos = []
         for p in self.paquetes_cayendo:
             p.y += velocidad_caida
-            if p.y < self.alto:
+            if p.y < self.alto_max:  # Usamos alto_max para que caigan hasta el fondo de pantalla
                 paquetes_validos.append(p)
         self.paquetes_cayendo = paquetes_validos
 
-        # --- MOVIMIENTO DE MARIO (Flechas) ---
-        # Sube y baja de 2 en 2 pisos (0 -> 2 -> 4)
-
-        # SUBIR
+        # --- MOVIMIENTO MARIO ---
         if pyxel.btnp(pyxel.KEY_UP):
             siguiente_piso = self.mario.piso + 2
-            # Verificamos si ese piso existe en el diccionario de Mario
             if siguiente_piso in self.alturas_mario:
-                # Vamos a la altura EXACTA definida en el diccionario
                 nueva_y = self.alturas_mario[siguiente_piso]
-                self.mario.subir(
-                    nueva_y)  # Tu metodo subir ya suma +2 al piso
+                self.mario.subir(nueva_y)
 
-        # BAJAR
         if pyxel.btnp(pyxel.KEY_DOWN):
             siguiente_piso = self.mario.piso - 2
             if siguiente_piso in self.alturas_mario:
                 nueva_y = self.alturas_mario[siguiente_piso]
                 self.mario.bajar(nueva_y)
 
-        # --- MOVIMIENTO DE LUIGI (W / S) ---
-        # Luigi tiene una excepción: Del 0 sube al 1. Luego va de 2 en 2 (1->3->5).
-
-        # SUBIR (W)
+        # --- MOVIMIENTO LUIGI ---
         if pyxel.btnp(pyxel.KEY_W):
             if self.luigi.piso == 0:
-                siguiente_piso = 1  # Del suelo salta al 1
+                siguiente_piso = 1
             else:
-                siguiente_piso = self.luigi.piso + 2  # Resto normal
+                siguiente_piso = self.luigi.piso + 2
 
             if siguiente_piso in self.alturas_luigi:
                 nueva_y = self.alturas_luigi[siguiente_piso]
                 self.luigi.subir(nueva_y)
-
-                # CORRECCIÓN DE PISO LOGICO:
-                # Tu metodo 'subir' en Personaje suma +2 por defecto.
-                # Si subimos de 0 a 1, el metodo pondrá piso=2. ¡Mal!
-                # Lo corregimos manualmente aquí:
                 if self.luigi.piso == 2 and siguiente_piso == 1:
                     self.luigi.piso = 1
 
-        # BAJAR (S)
         if pyxel.btnp(pyxel.KEY_S):
             if self.luigi.piso == 1:
                 siguiente_piso = 0
@@ -399,231 +304,199 @@ class Tablero:
             if siguiente_piso in self.alturas_luigi:
                 nueva_y = self.alturas_luigi[siguiente_piso]
                 self.luigi.bajar(nueva_y)
-
-                # Corrección manual si bajamos al 0
                 if siguiente_piso == 0:
                     self.luigi.piso = 0
 
-        # --- 2. LÓGICA DE PAQUETES (Sprint 3) ---
-
-        # A. Generar paquetes nuevos en Cinta 0
-
-        # Regla: "Siempre debe haber, al menos, un paquete en juego" (PDF)
-        # Tú has pedido empezar con 3.
+        # --- LÓGICA DE PAQUETES ---
         base_minima = 3
         incremento_dificultad = self.puntos // self.puntos_levelup
-
-        # El número mínimo de paquetes que debe haber en pantalla:
         min_paquetes = base_minima + incremento_dificultad
 
-        # 2. Contar cuántos paquetes hay REALMENTE en juego
         paquetes_en_juego = 0
         for c in self.cintas:
             paquetes_en_juego += len(c.paquetes)
         paquetes_en_juego += len(self.paquetes_cayendo)
 
-        # 3. Lógica de aparición
         self.contador_frames += 1
 
-        # Si tenemos MENOS paquetes que el MÍNIMO REQUERIDO, generamos uno nuevo
         if self.contador_frames >= self.tiempo_aparicion:
             if paquetes_en_juego < min_paquetes:
-                self.contador_frames = 0  # Reseteamos temporizador
-
-                # Nace a la derecha de la cinta 0
+                self.contador_frames = 0
                 cinta0 = self.cintas[0]
+                # Ajustamos spawn X relativo a cinta 0
                 nuevo = Paquete(cinta0.x + 70, cinta0.y, 0, 0)
                 cinta0.agregar_paquete(nuevo)
             else:
-                # Si ya cumplimos el mínimo, mantenemos el contador listo
-                # para generar INMEDIATAMENTE si se pierde un paquete
                 self.contador_frames = self.tiempo_aparicion
 
-        # B. Mover y Transferir
         for i in range(len(self.cintas)):
             cinta = self.cintas[i]
             cinta.actualizar_paquetes()
             paquete_saliente = cinta.paquete_llego_al_final()
 
             if paquete_saliente:
-                # 1. ¿Quién lo recoge?
                 recogido = False
 
-                # Cinta 0, 2, 4 -> Terminan en MARIO (Derecha) -> Mario debe estar en ese piso
-                if cinta.numero in [0, 2, 4]:
+                # Cintas PARES (0, 2, 4, 6) -> MARIO
+                if cinta.numero % 2 == 0:
                     if self.mario.piso == cinta.piso:
                         recogido = True
-
-                # Cinta 1, 3, 5 -> Terminan en LUIGI (Izquierda) -> Luigi debe estar en ese piso
+                # Cintas IMPARES (1, 3, 5, 7) -> LUIGI
                 else:
                     if self.luigi.piso == cinta.piso:
                         recogido = True
 
-                # IMPORTANTE: El paquete se retira de la CINTA, pero seguimos teniendo la referencia en 'paquete_saliente'
                 cinta.retirar_paquete(paquete_saliente)
 
                 if recogido:
                     self.puntos += 1
-                    # SONIDO: Éxito (Canal 0)
                     pyxel.play(0, 0)
-                    # --- ACTIVAR ANIMACIÓN DE RECOGIDA ---
-                    if cinta.numero in [0, 2, 4]:
+                    if cinta.numero % 2 == 0:
                         self.mario.animar_recogida()
                     else:
                         self.luigi.animar_recogida()
 
-                    if cinta.numero < 5:
-                        # Pasamos a la siguiente cinta (La de ARRIBA)
+                    # Si NO es la última cinta
+                    if cinta.numero < (self.nivel.num_cintas - 1):
                         siguiente_cinta = self.cintas[i + 1]
 
-                        # --- CÁLCULO DE SPAWN (NACIMIENTO) ---
-                        # Si la siguiente cinta mueve a la IZQUIERDA (1, 3, 5)
-                        # El paquete debe aparecer a la DERECHA (x + ancho)
                         if siguiente_cinta.numero % 2 != 0:
-                            # --- CORRECCIÓN: Siempre aparece a la derecha (inicio de movimiento) ---
-                            # Esto hace que aparezca a la DERECHA de la cinta (x + 159)
-                            # que visualmente está justo a la IZQUIERDA de Mario (donde acaba su lado)
                             paquete_saliente.x = siguiente_cinta.x + 146
-
-                        # Si la siguiente cinta mueve a la DERECHA (2, 4)
-                        # El paquete debe aparecer a la IZQUIERDA (x)
                         else:
                             paquete_saliente.x = siguiente_cinta.x
 
                         paquete_saliente.y = siguiente_cinta.y
                         paquete_saliente.piso = siguiente_cinta.piso
-                        paquete_saliente.cinta_actual = siguiente_cinta.numero  # Esto actualiza el sprite solo
-
+                        paquete_saliente.cinta_actual = siguiente_cinta.numero
                         siguiente_cinta.agregar_paquete(paquete_saliente)
 
-
-                    elif cinta.numero == 5:
-
-                        # El paquete entra al camión
-
+                    # Si ES la última cinta (Va al camión)
+                    elif cinta.numero == (self.nivel.num_cintas - 1):
                         self.camion.cargar_paquete(paquete_saliente)
-
-                        # REGLA 2: +10 puntos SOLO si el camión se completa
-
                         if self.camion.esta_lleno():
                             self.puntos += 10
-
-                            # Temporalmente lo vaciamos aquí para seguir probando la puntuación
-
-                            # (En el siguiente paso haremos que el camión "se vaya" de reparto)
-
                             self.iniciar_reparto()
                 else:
-                    # ============ FALLO DETECTADO ============
+                    # FALLO
                     self.fallos += 1
-                    # SONIDO: Fallo (Canal 0 para que suene inmediato)
                     pyxel.play(0, 1)
-
                     if self.fallos >= 3:
-                        # SONIDO: Game Over (Canal 1)
                         pyxel.play(1, 3)
-
                     self.paquetes_cayendo.append(paquete_saliente)
 
-                    # 1. Identificar culpable
-                    es_culpa_mario = (
-                                cinta.numero % 2 == 0)  # Pares (0,2,4) son lado Mario
-
+                    es_culpa_mario = (cinta.numero % 2 == 0)
                     if es_culpa_mario:
                         culpable = self.mario
                     else:
                         culpable = self.luigi
 
-                    # 2. Guardar estado actual
                     self.personaje_castigado = culpable
                     self.memoria_personaje = {
                         'piso': culpable.piso,
                         'y': culpable.y
                     }
-
-                    # 3. Aplicar Castigo (Posición y Mirada)
                     culpable.set_mirada_invertida(True)
 
+                    # LOGICA CASTIGO (Piso superior dinámico)
+                    piso_max_mario = self.nivel.num_pisos - 1 if self.nivel.num_pisos % 2 != 0 else self.nivel.num_pisos
+                    # En fácil (5 pisos): Mario max piso 4. En medio (7 pisos): Mario max piso 6.
+                    piso_max_mario = self.nivel.num_pisos - 1
+                    # Corrección: si num_pisos es 5, mario va al 4. Si es 7, mario va al 6. Correcto.
+
+                    piso_max_luigi = self.nivel.num_pisos  # Piso del camión (5 o 7)
+
                     if es_culpa_mario:
-                        # Mario al piso superior (4) -> Y=75
-                        culpable.piso = 4
-                        culpable.y = 75
-                        # Jefe castiga a Mario
-                        self.jefe.aparecer_castigo(295, 75, 180,
+                        culpable.piso = piso_max_mario
+                        culpable.y = self.alturas_mario[piso_max_mario]
+
+                        # Jefe aparece junto a Mario
+                        self.jefe.aparecer_castigo(295, culpable.y, 180,
                                                    mirar_izquierda=True)
-                        # mirar_izquierda=False porque Mario está a la derecha,
-                        # el jefe se pone en 295 (misma X?), debería mirar a Mario?
-                        # Si están en la misma X, se superponen.
-                        # Asumo que 295 es la coord del jefe y mira hacia Mario o hacia el centro.
-                        # Según instrucciones: "mirando al lado contrario al que suele mirar" (el personaje)
                     else:
-                        # Luigi al piso superior (5) -> Y=59
-                        culpable.piso = 5
-                        culpable.y = 59
-                        # Jefe castiga a Luigi
-                        self.jefe.aparecer_castigo(77, 59, 180,
+                        culpable.piso = piso_max_luigi
+                        culpable.y = self.alturas_luigi[piso_max_luigi]
+
+                        # Jefe aparece junto a Luigi
+                        self.jefe.aparecer_castigo(77, culpable.y, 180,
                                                    mirar_izquierda=False)
 
-                    # 4. Cambiar estado
                     self.estado_juego = CASTIGO
                     return
 
     def draw(self):
-        """Este es un metodo pyxel que se ejecuta en cada iteración del
-        juego (cada
-        fotograma). Debes poner aquí el código para dibujar los elementos del juego.
-        """
         # Borra la pantalla
         pyxel.cls(0)
 
-        pyxel.bltm(0, 0, 0, 0, 0, self.ancho, self.alto, 0)
+        # --- DIBUJO DEL MENÚ (Primero) ---
+        if self.estado_juego == MENU:
+            centro_x = self.ancho_max // 2
+            centro_y = self.alto_max // 2
 
-        # Dibuja el personaje, los parámetros de pyxel.blt son (x, y, sprite tuple)
+            # Dibujamos el fondo del menú en coordenadas 152, 200 (pixels)
+            # Centrado en pantalla
+            pyxel.blt(centro_x - 50, centro_y - 20, 0, 152, 200, 100, 40)
+
+            # Textos del menú
+            pyxel.text(centro_x - 60, centro_y - 12, "SELECCIONA EL NIVEL DE "
+                                                     "DIFICULTAD"
+                                                     ":", 10)
+
+            col_facil = 7
+            col_medio = 7
+
+            if self.indice_dificultad == 0:
+                col_facil = 8  # Rojo si seleccionado
+                pyxel.text(centro_x - 10, centro_y, "> FACIL", col_facil)
+                pyxel.text(centro_x - 10, centro_y + 10, "  MEDIO", col_medio)
+            else:
+                col_medio = 8
+                pyxel.text(centro_x - 10, centro_y, "  FACIL", col_facil)
+                pyxel.text(centro_x - 10, centro_y + 10, "> MEDIO", col_medio)
+
+            pyxel.text(centro_x - 47, centro_y + 25, "(ESPACIO o ENTER para "
+                                                     "jugar)", 6)
+            return
+
+        # --- DIBUJO DEL JUEGO ---
+        # Dibujamos tilemap.
+        # tilemap_y = 0 para Fácil.
+        # tilemap_y = 39*8 para Medio (según instrucciones).
+        # self.alto es el alto lógico del nivel (192 o 240).
+        pyxel.bltm(0, 0, 0, 0, self.tilemap_y, self.ancho, self.alto, 0)
+
         pyxel.blt(self.mario.x, self.mario.y, *self.mario.sprite)
         pyxel.blt(self.luigi.x, self.luigi.y, *self.luigi.sprite)
-        # DIBUJAR CAMIÓN
+
         pyxel.blt(self.camion.x, self.camion.y, *self.camion.sprite)
         for caja in self.camion.carga_visual:
-            # caja es un diccionario con x, y, sprite
             pyxel.blt(caja["x"], caja["y"], *caja["sprite"])
 
-        # PAQUETES (Sprint 3)
         for cinta in self.cintas:
             for p in cinta.paquetes:
-                # Usamos el sprite del paquete (se ajusta solo si está vacío o lleno)
-                # El * desempaqueta la tupla (0, u, v, w, h, colkey)
                 pyxel.blt(p.x, p.y, *p.sprite)
 
-        # --- Dibujar paquetes cayendo ---
         for p in self.paquetes_cayendo:
             pyxel.blt(p.x, p.y, *p.sprite)
 
-        # --- COLUMNA CENTRAL (Forma simple) ---
+        # Columna central
         for cinta in self.cintas:
-            # Dibuja un trozo de columna por CADA cinta.
-            # Si dos cintas están a la misma altura, se dibujará dos veces (no se nota).
             pyxel.blt(184, cinta.y - 3, 0, 136, 8, 16, 16)
 
-        # DISPENSADOR DE PAQUETES
-        pyxel.blt(352, 158, 0, 128, 70, 16, 6)
+        # Dispensador
+        pyxel.blt(352, 158 + self.offset_y, 0, 128, 70, 16, 6)
 
-        # --- DIBUJAR AL JEFE ---
         self.jefe.draw()
 
-        pyxel.text(10, 5, f"PUNTOS: {self.puntos}", 7) # Color 7 es blanco
+        pyxel.text(10, 5, f"PUNTOS: {self.puntos}", 7)
+        pyxel.text(100, 5, f"FALLOS: {self.fallos}/3", 8)
 
-        color_fallos = 8  # Rojo
-        pyxel.text(100, 5, f"FALLOS: {self.fallos}/3", color_fallos)
+        # PANTALLA GAME OVER
         if self.fallos >= 3:
-            #Dibujar fondo
-            pyxel.blt(142, self.alto // 2 - 7, 0, 152, 200, 100, 40)
-            # TEXTO GRANDE CENTRADO (Más o menos)
-            pyxel.text(self.ancho // 2 - 10, self.alto // 2, "GAME OVER", 8)
-            pyxel.text(self.ancho // 2 - 35, self.alto // 2 + 10,
-                       "Pulsa Q para salir", 6)
-            pyxel.text(self.ancho // 2 - 35, self.alto // 2 + 20, "Pulsa R "
-                                                                  "para "
-                                                                  "reiniciar", 6)
+            centro_x = 192
+            centro_y = self.alto_max // 2  # Centrado en la ventana total
 
+            pyxel.blt(centro_x - 50, centro_y - 20, 0, 152, 200, 100, 40)
 
-
+            pyxel.text(centro_x - 18, centro_y - 12, "GAME OVER", 8)
+            pyxel.text(centro_x - 34, centro_y - 2, "Pulsa Q para salir", 6)
+            pyxel.text(centro_x - 34, centro_y + 8, "Pulsa R para MENU", 6)

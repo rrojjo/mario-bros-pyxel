@@ -136,4 +136,3 @@ class Cinta:
                 if p.x >= self.x + self.ancho:
                     return p
         return None
-

@@ -77,7 +77,7 @@ class Nivel:
 
         elif self.dificultad == "MEDIO" or self.dificultad == "EXTREMO":
             self.ancho_pantalla = 368
-            self.alto_pantalla = 240  # Valor directo (ejemplo)
+            self.alto_pantalla = 192
 
         else:
             raise ValueError("Dificultad no reconocida en dimensiones: " + str(

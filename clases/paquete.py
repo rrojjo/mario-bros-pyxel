@@ -20,8 +20,10 @@ class Paquete:
             2: (0, 64, 36, 16, 12,0),  # Forma 2 (Cinta 2)
             3: (0, 80, 36, 16, 12,0),  # Forma 3 (Cinta 3)
             4: (0, 96, 36, 16, 12,0),  # Forma 4 (Cinta 4)
-            5: (0, 112, 36, 16, 12,0)
-            # Forma 5 (Cinta 5 - Última antes del camión)
+            5: (0, 112, 36, 16, 12,0), # Forma 5 (Cinta 5)
+            # AÑADIDO: Las cintas extra usan la misma forma que la 5
+            6: (0, 112, 36, 16, 12,0),
+            7: (0, 112, 36, 16, 12,0)
         }
 
     @property
@@ -91,4 +93,3 @@ class Paquete:
     def esta_en_extremo(self, limite_x: int) -> bool:
         """Verifica si el paquete llegó al extremo de la cinta"""
         return self.x >= limite_x
-

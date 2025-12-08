@@ -106,4 +106,3 @@ class Camion:
         #Resetea el contador de paquetes (se usará cuando el camión vuelva  del reparto).
         self._paquetes_cargados = 0
         self.carga_visual = []  # Limpiamos también el dibujo
-
