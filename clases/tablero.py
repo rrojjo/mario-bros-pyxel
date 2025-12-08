@@ -615,13 +615,15 @@ class Tablero:
         color_fallos = 8  # Rojo
         pyxel.text(100, 5, f"FALLOS: {self.fallos}/3", color_fallos)
         if self.fallos >= 3:
+            #Dibujar fondo
+            pyxel.blt(142, self.alto // 2 - 7, 0, 152, 200, 100, 40)
             # TEXTO GRANDE CENTRADO (Más o menos)
-            pyxel.text(self.ancho // 2 - 20, self.alto // 2, "GAME OVER", 8)
+            pyxel.text(self.ancho // 2 - 10, self.alto // 2, "GAME OVER", 8)
             pyxel.text(self.ancho // 2 - 35, self.alto // 2 + 10,
-                       "Pulsa Q para salir", 1)
+                       "Pulsa Q para salir", 6)
             pyxel.text(self.ancho // 2 - 35, self.alto // 2 + 20, "Pulsa R "
                                                                   "para "
-                                                                  "reiniciar", 1)
+                                                                  "reiniciar", 6)
 
 
 
