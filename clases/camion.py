@@ -1,18 +1,27 @@
 # Contiene la clase Camion.
 
 class Camion:
+    """
+    Gestiona la lógica de transporte y la representación visual de la carga.
+    Implementa un sistema de apilado visual para los paquetes recolectados.
+    """
+
+    # -------------------------------------------------------------------------
+    # INICIALIZACIÓN
 
     def __init__(self, x: int, y: int):
         self.x = x
         self.y = y
-        self.x_inicial=x
-        self._paquetes_cargados=0 #contador
-        self._capacidad=8 #fijo
-        self.sprite= (0, 32, 64, 47, 48, 15)
-        # NUEVO: Lista para guardar las coordenadas y sprites de las cajas en el camión
+        self.x_inicial = x
+        self._paquetes_cargados = 0
+        self._capacidad = 8
+        self.sprite = (0, 32, 64, 47, 48, 15)
+
+        # Almacena la posición y sprite de cada caja para dibujarlas apiladas
         self.carga_visual = []
 
-#Propiedad x
+    # -------------------------------------------------------------------------
+    # PROPIEDADES (GETTERS Y SETTERS)
 
     @property
     def x(self) -> int:
@@ -21,12 +30,10 @@ class Camion:
     @x.setter
     def x(self, x: int):
         if not isinstance(x, int):
-            raise TypeError ("La x debe ser un entero " + str(type(x)))
-        # ELIMINAMOS LA RESTRICCIÓN DE NEGATIVOS para que pueda salir de pantalla
+            raise TypeError("La x debe ser un entero " + str(type(x)))
+        # Se permite x negativa para animar la salida del camión por la izquierda
         else:
             self.__x = x
-
-#Propiedad y
 
     @property
     def y(self) -> int:
@@ -35,13 +42,11 @@ class Camion:
     @y.setter
     def y(self, y: int):
         if not isinstance(y, int):
-            raise TypeError ("La y debe ser un entero " + str(type(y)))
+            raise TypeError("La y debe ser un entero " + str(type(y)))
         elif y < 0:
             raise ValueError("La y no debe ser un número negativo")
         else:
             self.__y = y
-
-#Propiedad paquetes_cargados
 
     @property
     def paquetes_cargados(self) -> int:
@@ -51,58 +56,46 @@ class Camion:
     def capacidad(self) -> int:
         return self._capacidad
 
-#LÓGICA DE COMPORTAMIENTO
+    # -------------------------------------------------------------------------
+    # LÓGICA DE COMPORTAMIENTO Y CARGA
 
     def mover(self, dx: int):
-        """Mueve el camión (y su carga) horizontalmente"""
+        """Desplaza el camión y sincroniza la posición de la carga visual."""
         self.x += dx
-        # ¡Importante! También movemos las cajas visuales que lleva encima
         for caja in self.carga_visual:
             caja["x"] += dx
 
     def cargar_paquete(self, paquete_objeto):
         """
-        Recibe el objeto paquete, calcula su posición en la pila
-        y guarda los datos para dibujarlo.
+        Registra un paquete y calcula su posición visual en la pila (2 columnas x 4 filas).
         """
         if self._paquetes_cargados < self._capacidad:
-            # 1. CÁLCULO DE POSICIÓN (APILADO)
-            # Vamos a hacer 2 columnas de 4 cajas cada una.
-            # Columna 0: Paquetes 0, 2, 4, 6
-            # Columna 1: Paquetes 1, 3, 5, 7
+            # Determinamos posición en la matriz de carga
+            indice = self._paquetes_cargados
+            columna = indice % 2
+            fila = indice // 2
 
-            # Índice actual (0 a 7)
-            idx = self._paquetes_cargados
+            # Cálculo de desplazamientos para apilar las cajas dentro del
+            # área del camión
+            desplazamiento_x = 17 + (columna * 16)
+            desplazamiento_y = 26 + (-fila * 12)
 
-            columna = idx % 2
-            fila = idx // 2
+            nueva_x = self.x + desplazamiento_x
+            nueva_y = self.y + desplazamiento_y
 
-            # Ajustes visuales relativos a la X, Y del camión
-            # offset_x: Movemos las cajas a la parte trasera del camión
-            # offset_y: Las apilamos hacia arriba (restamos Y)
-
-            offset_x = 17 +(columna * 16)  # Separación horizontal de 10px
-            offset_y = 26 + (-fila * 12)  # Separación vertical de 6px
-
-            nueva_x = self.x + offset_x
-            nueva_y = self.y + offset_y
-
-            # Guardamos un diccionario con lo necesario para dibujar
             info_caja = {
                 "x": nueva_x,
                 "y": nueva_y,
                 "sprite": paquete_objeto.sprite
-                # Copiamos el sprite del paquete
             }
 
             self.carga_visual.append(info_caja)
             self._paquetes_cargados += 1
 
     def esta_lleno(self) -> bool:
-        #Devuelve True si el camión ha alcanzado su capacidad máxima.
         return self._paquetes_cargados >= self._capacidad
 
     def vaciar(self):
-        #Resetea el contador de paquetes (se usará cuando el camión vuelva  del reparto).
+        """Reinicia el estado del camión tras completar un reparto."""
         self._paquetes_cargados = 0
-        self.carga_visual = []  # Limpiamos también el dibujo
+        self.carga_visual = []

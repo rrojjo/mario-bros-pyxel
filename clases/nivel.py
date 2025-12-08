@@ -1,13 +1,23 @@
-# Contiene el nivel de dificultad del juego y la configuración del mismo.
+# Contiene la clase Nivel
 
-# nivel.py
 class Nivel:
+    """
+    Encapsula la configuración del juego (velocidad, dimensiones, cantidad de
+    cintas) basada en la dificultad seleccionada.
+    """
+
+    # -------------------------------------------------------------------------
+    # INICIALIZACIÓN
+
     def __init__(self, dificultad):
         self.dificultad = dificultad
         self._configurar_dimensiones()
         self._configurar_pisos()
         self.num_cintas = self._configurar_cintas()
         self.puntos_levelup = self._configurar_puntos_paquetes()
+
+    # -------------------------------------------------------------------------
+    # PROPIEDADES (GETTERS Y SETTERS)
 
     @property
     def dificultad(self):
@@ -16,12 +26,12 @@ class Nivel:
     @dificultad.setter
     def dificultad(self, valor):
         if not isinstance(valor, str):
-            raise TypeError("La dificultad debe ser una cadena " + str(type(valor)))
+            raise TypeError(
+                "La dificultad debe ser una cadena " + str(type(valor)))
         elif valor not in ["FACIL", "MEDIO", "EXTREMO", "CRAZY"]:
             raise ValueError("Dificultad no reconocida: " + str(valor))
         else:
             self.__dificultad = valor
-
 
     @property
     def ancho_pantalla(self):
@@ -33,10 +43,10 @@ class Nivel:
             raise TypeError("El ancho de pantalla debe ser un entero " +
                             str(type(valor)))
         elif valor <= 0:
-            raise ValueError("El ancho de pantalla debe ser un número positivo")
+            raise ValueError(
+                "El ancho de pantalla debe ser un número positivo")
         else:
             self.__ancho_pantalla = valor
-
 
     @property
     def alto_pantalla(self):
@@ -52,7 +62,6 @@ class Nivel:
         else:
             self.__alto_pantalla = valor
 
-
     @property
     def num_pisos(self):
         return self.__num_pisos
@@ -67,9 +76,11 @@ class Nivel:
         else:
             self.__num_pisos = valor
 
+    # -------------------------------------------------------------------------
+    # MÉTODOS DE CONFIGURACIÓN INTERNA
 
     def _configurar_dimensiones(self):
-        """Asigna valores directos a ancho y alto según la dificultad"""
+        """Establece la resolución de la ventana según la dificultad."""
 
         if self.dificultad == "FACIL" or self.dificultad == "CRAZY":
             self.ancho_pantalla = 368
@@ -83,33 +94,34 @@ class Nivel:
             raise ValueError("Dificultad no reconocida en dimensiones: " + str(
                 self.dificultad))
 
-
     def _configurar_cintas(self):
         if self.dificultad == "FACIL" or self.dificultad == "CRAZY":
-            return 6 # Cintas 0 a 5
+            return 6  # Cintas 0 a 5
         elif self.dificultad == "MEDIO":
-            return 8 # Cintas 0 a 7
+            return 8  # Cintas 0 a 7
         elif self.dificultad == "EXTREMO":
-            return 10 # Cintas 0 a 9
+            return 10  # Cintas 0 a 9
         else:
             return 6
 
-
     def _configurar_pisos(self):
         if self.dificultad == "FACIL" or self.dificultad == "CRAZY":
-            self.num_pisos = 5 # Pisos 0 a 5
+            self.num_pisos = 5  # Pisos 0 a 5
         elif self.dificultad == "MEDIO" or self.dificultad == "EXTREMO":
-            self.num_pisos = 7 # Pisos 0 a 7
+            self.num_pisos = 7  # Pisos 0 a 7
 
     def _configurar_puntos_paquetes(self):
-        """Define cada cuántos puntos se añade un paquete extra (Según Tabla PDF)"""
+        """
+        Define el umbral de puntuación para incrementar la dificultad (más
+        paquetes).
+        """
         if self.dificultad == "FACIL":
-            return 50  # Incrementa cada 50 puntos
+            return 50
         elif self.dificultad == "MEDIO":
-            return 30  # Incrementa cada 30 puntos
+            return 30
         elif self.dificultad == "EXTREMO":
-            return 30  # Incrementa cada 30 puntos
+            return 30
         elif self.dificultad == "CRAZY":
-            return 20  # Incrementa cada 20 puntos
+            return 20
         else:
-            return 50  # Valor por defecto
+            return 50
