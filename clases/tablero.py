@@ -67,15 +67,21 @@ class Tablero:
         self.jefe = None
         self.cintas = []
 
-        # Lógica de juego
+        # Lógica de juego y puntuación
         self.puntos = 0
         self.fallos = 0
+
+        # Lógica de tiempos y estados
         self.tiempo_reparto = 60
         self.contador_reparto = 0
         self.camion_volviendo = False
         self.paquetes_cayendo = []
         self.contador_frames = 0
         self.tiempo_aparicion = 0
+
+        # Variables para bonus de vida
+        self.camiones_completados = 0
+        self.meta_camiones = 0
 
         # Variables de lógica de castigo
         self.personaje_castigado = None
@@ -103,6 +109,13 @@ class Tablero:
 
         self.puntos = 0
         self.fallos = 0
+
+        self.camiones_completados = 0
+        if dificultad == "FACIL":
+            self.meta_camiones = 3
+        else:
+            self.meta_camiones = 5
+
         self.tiempo_reparto = 60
         self.contador_reparto = 0
         self.camion_volviendo = False
@@ -110,10 +123,11 @@ class Tablero:
         self.contador_frames = 0
         self.tiempo_aparicion = 120
 
-        # --- Cálculo de Offsets y Mapa ---
+        # --- Cálculo de Mapa ---
         # Ajuste vertical del escenario para niveles con mayor número de pisos
         if dificultad == "MEDIO":
-            self.offset_y = 0
+            self.offset_y = 0 # Desplazamiento para poder implementar más
+            # dificultad
             self.tilemap_y = 24 * 8
         else:
             self.offset_y = 0
@@ -391,6 +405,11 @@ class Tablero:
                         self.camion.cargar_paquete(paquete_saliente)
                         if self.camion.esta_lleno():
                             self.puntos += 10
+                            self.camiones_completados += 1
+                            if self.camiones_completados % self.meta_camiones == 0:
+                                if self.fallos > 0:
+                                    self.fallos -= 1
+                                    pyxel.play(0, 0)
                             self.iniciar_reparto()
                 else:
                     # Fallo: Castigo
