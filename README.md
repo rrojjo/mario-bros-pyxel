@@ -4,6 +4,10 @@
 [![Pyxel](https://img.shields.io/badge/Pyxel-Retro_Game_Engine-red.svg)](https://github.com/kitao/pyxel)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+<div align="center">
+  <img src="clases/assets/GameplayReadme.gif" alt="Demo de Gameplay Mario Bros Pyxel" width="600">
+</div>
+
 Adaptación basada en las mecánicas del clásico "Mario Bros Game & Watch" con diseño propio, desarrollada en Python utilizando la librería Pyxel. 
 
 Este es el proyecto final de la asignatura de Programación (1º de Ingeniería Informática, Universidad Carlos III de Madrid - UC3M), diseñado para aplicar conceptos de Programación Orientada a Objetos (POO).
